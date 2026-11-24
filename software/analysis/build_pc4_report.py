@@ -260,13 +260,31 @@ def build_report(out_docx: str, repo_dir: str):
         "impresión 3D: filamento PETG (resistente a humedad/sudor y temperatura < 40 °C), 25% de infill giroide, "
         "3 perímetros y altura de capa de 0.20 mm con base paralela a la cama para resistir tensión de las correas."
     )
-    add_placeholder_box(
-        doc,
-        "FIGURA 2.1: FOTOGRAFÍAS DEL ENSAMBLE FÍSICO AS-BUILT EN PROTOBOARD Y CARCASA / BANDAS",
-        "Insertar 2 a 3 fotografías nítidas y bien iluminadas del banco físico: (a) Gateway ESP32-S3, "
-        "(b) Nodo 1 ESP32-C3 + BNO085 con cables SPI < 10 cm y puentes PS0/PS1 en HIGH, "
-        "(c) Nodo 2 ESP32 + MPU6050 y (d) pesaje en báscula (< 50 g) / medición con Vernier."
-    )
+    # Foto panorámica real del banco físico (los 3 circuitos armados y encendidos)
+    banco_path = os.path.join(repo_dir, "docs", "evidencias", "foto_banco_completo.jpg")
+    if os.path.exists(banco_path):
+        p_b = doc.add_paragraph()
+        p_b.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_b.add_run().add_picture(banco_path, width=Inches(4.1))
+        add_body(
+            doc,
+            "Figura 2.1. Vista panorámica real del banco físico As-Built KNTX operando en laboratorio: "
+            "Gateway ESP32-S3 N16R8 con MPU6050 lumbar (arriba derecha), Nodo 1 ESP32-C3 SuperMini + GY-BNO08X "
+            "por SPI a 3 MHz (izquierda) y Nodo 2 ESP32 WROOM-32 + MPU6050 (abajo).",
+            italic=True
+        )
+
+    cables_path = os.path.join(repo_dir, "docs", "evidencias", "fig_infografia_cables_senales.png")
+    if os.path.exists(cables_path):
+        p_c = doc.add_paragraph()
+        p_c.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_c.add_run().add_picture(cables_path, width=Inches(6.65))
+        add_body(
+            doc,
+            "Figura 2.2. Mapa visual cable-por-cable con fotografías reales de los tres circuitos físicos As-Built, "
+            "detallando cada hilo físico, su pin GPIO y la señal eléctrica/lógica que transporta.",
+            italic=True
+        )
 
     add_heading_styled(doc, "2.2 Ensamblaje Eléctrico, Seguridad y Alimentación", level=2)
     add_body(
@@ -282,17 +300,24 @@ def build_report(out_docx: str, repo_dir: str):
     add_heading_styled(doc, "2.3 Esquemas 'As-Built' (Tal como se construyó en laboratorio)", level=2)
     add_body(
         doc,
-        "La Figura 2.2 presenta el diagrama de arquitectura e interconexión física As-Built correspondiente al "
-        "ensamble real de laboratorio. La asignación completa de pines (GPIO) entre el ESP32-C3 y el BNO085 en modo "
-        "SPI a 3 MHz, el ESP32 con el MPU6050 por I2C a 400 kHz y el Gateway ESP32-S3 se detalla en la Tabla 2 "
-        "y en el archivo hardware/pcb/ESQUEMATICO_AS_BUILT_PC4.md del repositorio."
+        "La Figura 2.3 presenta el flujo visual completo de paquetes y telemetría desde los sensores inerciales "
+        "hasta la interfaz de visualización, explicando cómo viajan las tramas ESP-NOW de 36 bytes a 100 Hz, "
+        "el broadcast de retorno SNTP cada 1,000 ms, la separación Dual-Core de FreeRTOS y la salida por BLE 5.0 "
+        "y USB-CSV. La Figura 2.4 y la Tabla 2 consolidan la arquitectura técnica formal y el pinout exacto."
     )
+    flujo_path = os.path.join(repo_dir, "docs", "evidencias", "fig_infografia_flujo_paquetes.png")
+    if os.path.exists(flujo_path):
+        p_fl = doc.add_paragraph()
+        p_fl.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_fl.add_run().add_picture(flujo_path, width=Inches(6.65))
+        add_body(doc, "Figura 2.3. Infografía de flujo de paquetes en tiempo real: SPI 3 MHz -> ESP-NOW 36 B -> SNTP -> FreeRTOS Dual-Core -> BLE/CSV.", italic=True)
+
     diag_path = os.path.join(repo_dir, "hardware", "pcb", "diagrama_as_built_pc4.png")
     if os.path.exists(diag_path):
         p_img = doc.add_paragraph()
         p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p_img.add_run().add_picture(diag_path, width=Inches(6.6))
-        add_body(doc, "Figura 2.2. Diagrama de arquitectura e interconexiones As-Built del prototipo KNTX (PC4).", italic=True)
+        p_img.add_run().add_picture(diag_path, width=Inches(6.5))
+        add_body(doc, "Figura 2.4. Diagrama de arquitectura e interconexiones As-Built del prototipo KNTX (PC4).", italic=True)
 
     add_styled_table(
         doc,
@@ -340,12 +365,18 @@ def build_report(out_docx: str, repo_dir: str):
         ],
         col_widths=[1.6, 1.4, 2.0, 1.8],
     )
-    add_placeholder_box(
-        doc,
-        "FIGURA 3.1: CAPTURA DEL REPOSITORIO GITHUB (CARPETAS, RAMAS Y COMMITS DE YAEL Y JORGE)",
-        "Tomar captura de pantalla de https://github.com/herzyael18-collab/KNTX-Biomechanics-IMU y de la pestaña "
-        "Commits / Network Graph mostrando las 4 ramas temáticas y los commits individuales de Yael y Jorge."
-    )
+    gh_path = os.path.join(repo_dir, "docs", "evidencias", "foto_github_repo.jpg")
+    if os.path.exists(gh_path):
+        p_gh = doc.add_paragraph()
+        p_gh.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p_gh.add_run().add_picture(gh_path, width=Inches(6.55))
+        add_body(
+            doc,
+            "Figura 3.1. Captura real del repositorio público en GitHub (KNTX-Biomechanics-IMU) mostrando "
+            "estructura normalizada (/docs, /firmware, /hardware, /software), 5 ramas activas, 20 commits "
+            "y 2 contribuidores verificados (Yael Alejandro Yah Hernández y Jorge Carlos Contreras Rodríguez).",
+            italic=True
+        )
 
     # ================= 4.0 PRUEBAS PRELIMINARES =================
     add_heading_styled(doc, "4.0 Pruebas Preliminares y 'Primera Prueba Funcional' (Núcleo Demostrativo)", level=1)
