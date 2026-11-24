@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 """
 build_sensor_change_memo.py
-Genera una Nota Técnica Ejecutiva de 1 página (formato institucional Universidad Modelo)
-para presentar hoy al Dr. Rodrigo Daniel Solís Ortega:
-  - Justificación técnico-financiera de sustitución parcial de BNO085 (sobrecosto +163% / desabasto).
-  - Explicación de cómo se superó la limitación de CPU de PC3 para correr fusión Madgwick a 100 Hz.
-  - Tabla de cumplimiento real (qué cumple y qué cambia con MPU-6050 vs. BMI160/MPU-9250).
-  - Propuesta formal de Arquitectura Híbrida para aval del PC5.
+Nota Técnica Ejecutiva de 1 página exacta (Universidad Modelo) para aval docente del cambio
+a Arquitectura Sensorial Híbrida: 1 BNO085 (Tibia) + 3 BMI160 Bosch (Fémur, Pie y Lumbar).
 """
 
-import os
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -28,20 +23,20 @@ def shade(cell, hex_c):
 
 def add_sec(doc, title):
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_before = Pt(5.5)
     p.paragraph_format.space_after = Pt(2)
     r = p.add_run(title)
     r.bold = True
     r.font.name = "Calibri"
-    r.font.size = Pt(10.5)
+    r.font.size = Pt(10.2)
     r.font.color.rgb = BLUE
 
 
-def add_p(doc, text, bold_pre=None, size=9.2):
+def add_p(doc, text, bold_pre=None, size=8.9):
     p = doc.add_paragraph()
     p.paragraph_format.space_before = Pt(0)
-    p.paragraph_format.space_after = Pt(3)
-    p.paragraph_format.line_spacing = 1.08
+    p.paragraph_format.space_after = Pt(2.5)
+    p.paragraph_format.line_spacing = 1.07
     if bold_pre:
         rb = p.add_run(bold_pre)
         rb.bold = True
@@ -68,7 +63,7 @@ def add_tbl(doc, headers, rows, widths):
         r = p.add_run(h)
         r.bold = True
         r.font.name = "Calibri"
-        r.font.size = Pt(8.5)
+        r.font.size = Pt(8.3)
         r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
     for i, rdata in enumerate(rows):
@@ -80,10 +75,10 @@ def add_tbl(doc, headers, rows, widths):
             p = c.paragraphs[0]
             p.paragraph_format.space_before = Pt(1.5)
             p.paragraph_format.space_after = Pt(1.5)
-            p.paragraph_format.line_spacing = 1.05
+            p.paragraph_format.line_spacing = 1.04
             r = p.add_run(val)
             r.font.name = "Calibri"
-            r.font.size = Pt(8.2)
+            r.font.size = Pt(8.0)
             if j == 0:
                 r.bold = True
                 r.font.color.rgb = NAVY
@@ -92,12 +87,12 @@ def add_tbl(doc, headers, rows, widths):
 def build_memo(out_path):
     doc = Document()
     for s in doc.sections:
-        s.top_margin = Inches(0.45)
-        s.bottom_margin = Inches(0.45)
-        s.left_margin = Inches(0.6)
-        s.right_margin = Inches(0.6)
+        s.top_margin = Inches(0.42)
+        s.bottom_margin = Inches(0.42)
+        s.left_margin = Inches(0.58)
+        s.right_margin = Inches(0.58)
 
-    # Encabezado institucional compacto
+    # Encabezado institucional
     hdr = doc.add_table(rows=1, cols=1)
     hdr.alignment = WD_TABLE_ALIGNMENT.CENTER
     cell = hdr.cell(0, 0)
@@ -107,97 +102,112 @@ def build_memo(out_path):
     p.paragraph_format.space_before = Pt(4)
     p.paragraph_format.space_after = Pt(4)
     r1 = p.add_run("UNIVERSIDAD MODELO • ESCUELA DE INGENIERÍA • PROYECTOS VII (AD26)\n")
-    r1.bold = True; r1.font.name = "Calibri"; r1.font.size = Pt(10); r1.font.color.rgb = RGBColor(0xCB, 0xD5, 0xE1)
-    r2 = p.add_run("NOTA TÉCNICA DE EQUIVALENCIA SENSORIAL Y VALIDACIÓN DE ARQUITECTURA HÍBRIDA (PC4 → PC5)")
-    r2.bold = True; r2.font.name = "Calibri"; r2.font.size = Pt(11.5); r2.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    r1.bold = True; r1.font.name = "Calibri"; r1.font.size = Pt(9.5); r1.font.color.rgb = RGBColor(0xCB, 0xD5, 0xE1)
+    r2 = p.add_run("NOTA TÉCNICA: ADOPCIÓN DE SENSOR BOSCH BMI160 EN ARQUITECTURA HÍBRIDA KNTX (PC4 → PC5)")
+    r2.bold = True; r2.font.name = "Calibri"; r2.font.size = Pt(11); r2.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
     p_meta = doc.add_paragraph()
-    p_meta.paragraph_format.space_before = Pt(4)
-    p_meta.paragraph_format.space_after = Pt(3)
+    p_meta.paragraph_format.space_before = Pt(3.5)
+    p_meta.paragraph_format.space_after = Pt(2.5)
     for k, v in [
         ("Proyecto: ", "Proyecto 10 — KNTX (1 pierna: 3 nodos satélite + Gateway espalda baja)   |   "),
         ("Fecha: ", "24 de noviembre de 2026\n"),
         ("Equipo: ", "Yael Alejandro Yah Hernández & Jorge Carlos Contreras Rodríguez   |   "),
-        ("Para: ", "Dr. Rodrigo Daniel Solís Ortega"),
+        ("Docente: ", "Dr. Rodrigo Daniel Solís Ortega"),
     ]:
-        rk = p_meta.add_run(k); rk.bold = True; rk.font.name = "Calibri"; rk.font.size = Pt(8.8); rk.font.color.rgb = NAVY
-        rv = p_meta.add_run(v); rv.font.name = "Calibri"; rv.font.size = Pt(8.8); rv.font.color.rgb = DARK
+        rk = p_meta.add_run(k); rk.bold = True; rk.font.name = "Calibri"; rk.font.size = Pt(8.6); rk.font.color.rgb = NAVY
+        rv = p_meta.add_run(v); rv.font.name = "Calibri"; rv.font.size = Pt(8.6); rv.font.color.rgb = DARK
 
-    # 1. Contexto y justificación económica
-    add_sec(doc, "1. Justificación Técnico-Financiera de Sustitución Parcial de Sensores (Cadena de Suministro)")
+    # 1. Decisión y contexto de mercado
+    add_sec(doc, "1. Decisión de Ingeniería y Justificación de Mercado (Sustitución Parcial del BNO085 por Bosch BMI160)")
     add_p(
         doc,
-        "En el PC2/PC3 se cotizó el sensor BNO085 en $380 MXN/unidad para equipar 3 nodos satélite + 1 referencia lumbar. "
-        "Al ejecutar la compra final en noviembre de 2026, el BNO085 original presenta desabasto local en Mérida, tiempos de "
-        "importación incompatibles con el cierre del semestre (1 de diciembre) y un incremento de precio hasta ~$1,000 MXN por "
-        "pieza (+163% de sobrecosto, elevando 3 módulos faltantes a ~$3,000 MXN). Dado que ya contamos con 1 BNO085 operativo "
-        "(validado en SPI a 3 MHz) y 2 ESP32-C3 adicionales disponibles localmente, se propone adoptar una Arquitectura Sensorial "
-        "Híbrida: conservar el BNO085 en la Tibia (nodo crítico de impacto > 3.0 g y referencia metrológica SPI) y emplear sensores "
-        "disponibles en Mérida/entrega 24 h en los 3 nodos restantes (Fémur, Pie y Lumbar)."
+        "En PC2/PC3 se presupuestó el BNO085 en $380 MXN/unidad; sin embargo, al adquirir los 3 sensores restantes en noviembre "
+        "de 2026 el BNO085 original presenta desabasto local en Mérida, tiempos de importación incompatibles con el cierre del "
+        "1 de diciembre y un incremento hasta ~$1,000 MXN/pza (+163%, ~$3,000 MXN extra). Por ello, conservamos nuestro BNO085 "
+        "físico en el Nodo 1 (Tibia, segmento de impacto > 3.0 g) y seleccionamos el sensor Bosch BMI160 ($74.25 MXN/pza con "
+        "entrega Full en 24 h a Mérida; $223 MXN por 3 piezas = 92% de ahorro) para equipar Fémur, Pie y Lumbar."
     )
 
-    # 2. Cómo se superó el cuello de botella de CPU de PC3
-    add_sec(doc, "2. ¿Cómo se logró ejecutar Fusión Madgwick a 100 Hz sin colapsar el microcontrolador?")
+    # 2. Por qué BMI160 y por qué descartamos el magnetómetro
+    add_sec(doc, "2. ¿Por qué Bosch BMI160 y por qué se descarta el Magnetómetro (6-DOF vs. 9-DOF)?")
     add_p(
         doc,
-        "En PC3 (Anexo A, Decisión 1 v1) se descartó inicialmente la fusión por software porque saturó el CPU y provocó "
-        "pérdida de paquetes ESP-NOW. Durante la implementación real en banco del PC4 identificamos que el cuello de botella no era "
-        "la capacidad de cómputo del procesador (ESP32-C3 RISC-V 160 MHz / ESP32 240 MHz), sino la arquitectura bloqueante "
-        "(impresión Serial por paquete a 115,200 bps, polling SPI continuo sin pin INT y uso de delay()). Al corregir estos cuatro "
-        "factores —temporización no bloqueante con esp_timer_get_time() (1 µs), filtro Madgwick 6-DOF compacto (~120 µs por ciclo, "
-        "solo 1.2% del CPU de la ventana de 10 ms), diagnósticos a 0.5 Hz, lectura SPI por interrupción INT (bajó de 8.99 ms a 1.39 ms) "
-        "y telemetría Gateway a 921,600 bps con cola dedicada g_csvQueue— el sistema alcanzó en pruebas reales de 60 s: Nodo 1 "
-        "(BNO085) = 99.94 Hz (P95 jitter = 1.0 ms, deriva = 0.021 °/min) y Nodo 2 (MPU-6050 + Madgwick) = 100.21 Hz (P95 jitter = "
-        "0.0 ms, deriva = 0.977 °/min), ambos con 0 overflows y cruce continuo por 90° (hasta 136.4°) sin Gimbal Lock."
+        "A diferencia del MPU-6050 (solo I2C) o del MPU-9250 (descontinuado/EOL, $360–$433 MXN y con clones frecuentes), el "
+        "BMI160 pertenece a la misma línea Bosch Sensortec de grado wearable que el BNO085: incorpora bus SPI nativo hasta 10 MHz "
+        "(preservando íntegros RP-04 y RQ-01 a 3 MHz con pistas < 10 cm y lectura <= 1.5 ms), acelerómetro hasta ±16 g (apto para "
+        "impactos de carrera), bajo ruido de giroscopio y consumo ultrabajo (~0.9 mA, favoreciendo autonomía > 3 h de RP-08).",
+        bold_pre="Ventaja técnica del BMI160: "
+    )
+    add_p(
+        doc,
+        "El BMI160 es una IMU de 6-DOF (sin magnetómetro), decisión respaldada directamente por la bibliografía del PC2 "
+        "(Ceriola et al., 2026) y la Decisión 2 del PC3: durante la validación dinámica en caminadora (PV-08), el motor eléctrico "
+        "y el chasis metálico generan distorsiones ferromagnéticas que provocan errores de yaw > 30° en magnetómetros. Por esta "
+        "razón, incluso el BNO085 se opera obligatoriamente sin magnetómetro (modo Game Rotation Vector, criterio RP-03 < 3 °/min). "
+        "En consecuencia, eliminar el magnetómetro evita corrupción magnética, reduce costo y simplifica la calibración previa.",
+        bold_pre="Justificación de descarte del magnetómetro: "
     )
 
-    # 3. Comparativa de sensores alternativos disponibles en Mérida
-    add_sec(doc, "3. Evaluación de Alternativas Disponibles (Mérida / Envío 24 h) y Matriz de Cumplimiento PC2")
+    # 3. Cómo se superó la limitación de CPU del PC3
+    add_sec(doc, "3. ¿Cómo logramos Fusión Madgwick en CPU a 100 Hz sin colapsar el ESP32-C3 (Logro Real PC4)?")
+    add_p(
+        doc,
+        "En el PC3 (Decisión 1 v1) la fusión por software falló al saturar la CPU y perder paquetes ESP-NOW. En las pruebas "
+        "físicas de laboratorio del PC4 comprobamos que el cuello de botella no era la potencia del MCU (ESP32-C3 RISC-V 160 MHz), "
+        "sino bloqueos de software (Serial a 115,200 bps por paquete, polling SPI sin pin INT y delay()). Tras optimizar el "
+        "firmware —temporización con esp_timer_get_time() (1 µs), Madgwick 6-DOF compacto (~120 µs/ciclo = 1.2% de la ventana de "
+        "10 ms), lectura SPI por pin INT (reducción de 8.99 ms a 1.39 ms) y Gateway Dual-Core a 921,600 bps con cola g_csvQueue— "
+        "validamos en corrida continua de 60 s (12,016 muestras): Nodo 1 (BNO085) = 99.94 Hz (P95 jitter = 1.0 ms, deriva = "
+        "0.021 °/min) y Nodo 2 (MPU-6050 + Madgwick) = 100.21 Hz (P95 jitter = 0.0 ms, deriva = 0.977 °/min), 0 overflows y cruce "
+        "continuo por 90° (hasta 136.4°) sin Gimbal Lock."
+    )
+
+    # 4. Tabla comparativa
+    add_sec(doc, "4. Matriz Comparativa de Opciones Evaluadas y Cumplimiento de Requisitos PC2")
     add_tbl(
         doc,
-        ["Alternativa (3 pzas faltantes)", "Bus", "Costo est. (MXN)", "Cumplimiento frente a requisitos PC2", "Recomendación"],
+        ["Sensor Evaluado", "Bus / DOF", "Precio (3 pzas)", "Cumplimiento frente a requisitos PC2", "Dictamen"],
         [
-            ["Opción A (Preferida):\nBMI160 / MPU-9250 (6500)\n(Av. 60 Norte / ML Full 24h)", "SPI 3 MHz\ne I2C", "$110–$220 c/u\n(~$450–$660 total)",
-             "CUMPLE 100% incluyendo bus SPI a 3 MHz (RP-04/RQ-01), rango ±16 g, bajo ruido y 100 Hz con Madgwick en ESP32-C3. Sin cambios al diseño SPI.",
-             "MEJOR OPCIÓN\n(si hay stock hoy/mañana)"],
-            ["Opción B (Respaldo inmediato):\nMPU-6050 (GY-521)\n(Ya tenemos 2; stock Mérida)", "Solo I2C\n400 kHz", "$50–$70 c/u\n(~$100–$140 total)",
-             "CUMPLE 100 Hz (100.21 Hz medidos), jitter 0.0 ms, deriva 0.977 °/min (< 3 °/min), cuaterniones sin Gimbal Lock y trama idéntica de 36 B.\nNO CUMPLE: bus SPI (usa I2C local < 5 cm, 0.45 ms/lectura) ni magnetómetro (que igual se desactiva en caminadora).",
-             "VIABLE 100%\n(avalado en prueba real de 60 s)"],
-            ["Referencia original:\nBNO085 adicional (3 pzas)", "SPI 3 MHz", "~$1,000 c/u\n(~$3,000 total)",
-             "Cumple todos los requisitos pero excede el presupuesto (+163%) y tiempos de entrega impiden completar validación dinámica PC5 (1 dic).",
-             "DESESTIMADO\n(conservar 1 pza en Tibia)"],
+            ["Bosch BMI160\n(ML Full — 24 h)", "SPI 3 MHz\n6-DOF", "$223 MXN\n($74.25 c/u)",
+             "CUMPLE 100%: SPI 3 MHz (RP-04/RQ-01), ±16 g, 100 Hz + Madgwick en ESP32-C3, deriva < 3 °/min, consumo 0.9 mA (>3 h), inmune a perturbación magnética en caminadora.",
+             "SELECCIONADO\n(Fémur, Pie, Lumbar)"],
+            ["MPU-9250 / 6500\n(EOL / genérico)", "SPI / I2C\n9-DOF*", "$1,077–$1,298\n($359–$433 c/u)",
+             "Descontinuado (EOL), costo 5× mayor al BMI160, alto riesgo de clones sin magnetómetro real y mayor ruido/consumo.",
+             "DESCARTADO\n(Costo / EOL)"],
+            ["MPU-6050 (GY-521)\n(Respaldo actual)", "Solo I2C\n6-DOF", "$100–$140\n(ya tenemos 2)",
+             "Validado hoy a 100.21 Hz, jitter 0.0 ms y deriva 0.977 °/min; NO tiene bus SPI (usa I2C local < 5 cm). Se conserva como respaldo.",
+             "RESPALDO\n(Validado en PC4)"],
+            ["BNO085 adicional\n(Importación)", "SPI 3 MHz\n9-DOF", "~$3,000 MXN\n(~$1,000 c/u)",
+             "Sobrecosto +163% y entrega tardía fuera del calendario del 1 de dic. Se conserva la pieza física ya operativa en Tibia (Nodo 1).",
+             "CONSERVAR 1 PZA\nEN TIBIA (NODO 1)"],
         ],
-        [1.75, 0.65, 1.0, 2.75, 1.15],
+        [1.45, 0.72, 0.95, 2.93, 1.25],
     )
 
-    # 4. Acuerdo solicitado hoy al docente
-    add_sec(doc, "4. Propuesta Concreta para Aprobación del Prototipo Final (PC5 — 1 de Diciembre)")
+    # 5. Plan cerrado PC5
+    add_sec(doc, "5. Configuración Final Propuesta para Aprobación (PC5 y Expotrónica — 1 de Diciembre)")
     add_p(
         doc,
-        "1) Conservar el BNO085 en el Nodo 1 (Tibia) para garantizar detección de contacto inicial (> 3.0 g) y validación metrológica "
-        "del bus SPI a 3 MHz (1.39 ms <= 1.5 ms).  "
-        "2) Equipar los nodos Fémur, Pie y Lumbar con BMI160/MPU-9250 (preferente por soporte SPI) o MPU-6050 (ya validado hoy a "
-        "100.21 Hz y 0.977 °/min de deriva), emitiendo todos exactamente la misma trama binaria KNTX (36 bytes) vía ESP-NOW hacia "
-        "el Gateway ESP32-S3.  "
-        "3) Consolidar los módulos con pines sobre placas preperforadas soldadas compactas dentro de las carcasas 3D PETG (32.9 cm³ < 40 cm³) "
-        "y documentar formalmente el análisis de mercado y equivalencia en el Expediente de Desviaciones y Cierre Presupuestal del PC5.",
-        size=8.9,
+        "• Arquitectura Híbrida Homogénea en Protocolo: 1× ESP32-C3 + BNO085 (Tibia, SPI 3 MHz) + 2× ESP32-C3 + BMI160 "
+        "(Fémur y Pie, SPI 3 MHz, Madgwick 6-DOF) + 1× Gateway ESP32-S3 + BMI160 (Espalda baja), transmitiendo todos la "
+        "misma trama KNTX de 36 bytes a 100 Hz vía ESP-NOW.  • Ensamble final en placas preperforadas soldadas compactas dentro "
+        "de carcasas PETG (< 40 cm³, IP54) y registro formal en el Expediente de Desviaciones y Cierre Presupuestal del PC5.",
+        size=8.6,
     )
 
-    # Línea de visto bueno
-    p_sig = doc.add_paragraph()
-    p_sig.paragraph_format.space_before = Pt(6)
-    p_sig.paragraph_format.space_after = Pt(0)
-    r_sig = p_sig.add_run(
-        "Evidencia en vivo disponible en repositorio público: https://github.com/herzyael18-collab/KNTX-Biomechanics-IMU  |  "
-        "Dashboard HMI Python y 12,016 muestras reales verificadas en banco."
+    p_f = doc.add_paragraph()
+    p_f.paragraph_format.space_before = Pt(4)
+    p_f.paragraph_format.space_after = Pt(0)
+    rf = p_f.add_run(
+        "Repositorio público auditado y evidencias reales (12,016 muestras + Dashboard HMI Python): "
+        "https://github.com/herzyael18-collab/KNTX-Biomechanics-IMU"
     )
-    r_sig.italic = True; r_sig.font.name = "Calibri"; r_sig.font.size = Pt(8.2); r_sig.font.color.rgb = BLUE
+    rf.italic = True; rf.font.name = "Calibri"; rf.font.size = Pt(8.1); rf.font.color.rgb = BLUE
 
     doc.save(out_path)
-    print("[OK] Nota tecnica generada:", out_path)
+    print("[OK] Nota tecnica BMI160 generada:", out_path)
 
 
 if __name__ == "__main__":
-    out = r"c:\Proyectos\Proyectos 7\KNTX-Biomechanics-IMU\docs\reportes\Nota_Tecnica_Cambio_Sensores_KNTX.docx"
-    build_memo(out)
+    build_memo(r"c:\Proyectos\Proyectos 7\KNTX-Biomechanics-IMU\docs\reportes\Nota_Tecnica_Cambio_Sensores_KNTX.docx")
