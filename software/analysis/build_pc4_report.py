@@ -526,5 +526,5 @@ def build_report(out_docx: str, repo_dir: str):
 
 if __name__ == "__main__":
     repo = r"c:\Proyectos\Proyectos 7\KNTX-Biomechanics-IMU"
-    out = os.path.join(repo, "docs", "reportes", "PC4_Diseno_a_Detalle_KNTX_Borrador.docx")
+    out = os.path.join(repo, "docs", "reportes", "PC4_Diseno_a_Detalle_KNTX_v2.docx")
     build_report(out, repo)
