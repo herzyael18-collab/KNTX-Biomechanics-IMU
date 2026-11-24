@@ -442,10 +442,17 @@ def build_report(out_docx: str, repo_dir: str):
         "corrección por descomposición Twist con signo 2·atan2(q_eje, w): demuestra repetición a +90°, cruce suave "
         "hasta +166.95° sin Gimbal Lock, discriminación de flexión inversa (-88.23° y -16.5°) y retorno exacto a 0.0°."
     )
+    insert_fig(
+        "fig_multiples_pruebas_reciente.png",
+        "Figura 4.7. Ensayo prolongado multi-patrón en vivo tras actualizar el Gateway con ángulo Twist con signo "
+        "(86.91 s continuos, 17,387 muestras: 8,695 Nodo 1 + 8,692 Nodo 2 = 100.0% de paquetes sin pérdidas). "
+        "Se verifican flexiones inversas (-83.87°), oscilaciones rápidas repetitivas a 100 Hz sin aliasing, "
+        "cruces múltiples > 90° hasta +157.34° sin Gimbal Lock y retorno consistente a 0.0° sin deriva."
+    )
 
     add_placeholder_box(
         doc,
-        "FIGURA 4.7 (COMPLEMENTO EN LABORATORIO): CAPTURAS DE OSCILOSCOPIO (FLANCOS SPI 3 MHz Y LATENCIA GPIO10-GPIO4)",
+        "FIGURA 4.8 (COMPLEMENTO EN LABORATORIO): CAPTURAS DE OSCILOSCOPIO (FLANCOS SPI 3 MHz Y LATENCIA GPIO10-GPIO4)",
         "Insertar aquí las 2 fotos de la pantalla del osciloscopio tomadas al grabar el video en el laboratorio de "
         "Mecatrónica: (a) flanco de subida/bajada SCLK a 3 MHz (< 50 ns) y (b) diferencia entre pulso GPIO10 del "
         "Nodo 1 y GPIO4 del Gateway (latencia en el aire < 2 ms), más lectura en goniómetro digital clínico."
