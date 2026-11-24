@@ -359,58 +359,92 @@ def build_report(out_docx: str, repo_dir: str):
         "paso por 90° de inclinación), báscula digital, calibrador Vernier y la suite Python KNTX."
     )
 
-    add_heading_styled(doc, "4.2 Evidencia de Pruebas y Caso Crítico Asignado al Proyecto 10", level=2)
+    add_heading_styled(doc, "4.2 Evidencia de Pruebas, Correcciones en Banco y Caso Crítico Asignado", level=2)
     add_body(
         doc,
-        "En cumplimiento del caso crítico asignado al Proyecto 10, se documentan las siguientes pruebas instrumentadas "
-        "(respaldadas en el Video Explicativo de 3 a 5 minutos):"
+        "Las pruebas en laboratorio se ejecutaron con los 3 módulos físicos operando de forma simultánea "
+        "(Gateway ESP32-S3 MAC E0:72:A1:F4:EB:D8 + MPU6050 lumbar, Nodo 1 ESP32-C3 + BNO085 por SPI a 3 MHz "
+        "y Nodo 2 ESP32 + MPU6050 con Madgwick 6-DOF a 100 Hz). Durante la puesta en marcha real se identificaron "
+        "y corrigieron cuatro fallos técnicos documentados en la Figura 4.1 y la Figura 4.2:"
     )
-    add_bullet(doc, "PV-02 (Integridad Bus SPI 3 MHz en Nodo 1): ", "Captura de osciloscopio/analizador lógico verificando frecuencia de reloj SCLK = 3 MHz, tiempos de subida/bajada < 50 ns, duración de transacción <= 1.5 ms y tasa de error 0%.")
-    add_bullet(doc, "PV-01 / PV-03 (Concurrencia ESP-NOW 100 Hz y Jitter < 5 ms): ", "Registro .CSV de 10 minutos con Nodo 1 (ESP32-C3 + BNO085) y Nodo 2 (ESP32 + MPU6050) recibidos simultáneamente en el Gateway ESP32-S3, confirmando >= 95% de paquetes y sincronía < 5 ms tras activar el broadcast SNTP cada 1,000 ms.")
-    add_bullet(doc, "PV-04 (Latencia en el aire < 2 ms): ", "Medición con cursores de osciloscopio entre flanco de subida en GPIO10 (Nodo 1) y flanco de subida en GPIO4 (Gateway ESP32-S3).")
-    add_bullet(doc, "PV-06 / PV-07 (Deriva estática y exactitud angular sin Gimbal Lock): ", "Inicialización estática de 10 s, deriva de yaw en reposo (Game Rotation Vector vs. Rotation Vector) y rotación de nodos sobre goniómetro digital pasando explícitamente por 90° de inclinación para demostrar continuidad matemática del cuaternión relativo.")
-    add_bullet(doc, "Perturbación y Failsafe en Vivo: ", "Desconexión abrupta de la alimentación del Nodo 2 durante transmisión a 100 Hz; el Gateway detecta el timeout a los 200 ms, imprime '[FAILSAFE] Nodo 2 desconectado -> marcado NULL' y mantiene sin interrupción la recepción del Nodo 1, la cola FreeRTOS (0 overflows) y las notificaciones BLE.")
+
+    def insert_fig(filename, caption, width_in=6.55):
+        fpath = os.path.join(repo_dir, "docs", "evidencias", filename)
+        if os.path.exists(fpath):
+            p_f = doc.add_paragraph()
+            p_f.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p_f.add_run().add_picture(fpath, width=Inches(width_in))
+            add_body(doc, caption, italic=True)
+
+    insert_fig(
+        "fig_consola_antes_despues.png",
+        "Figura 4.1. Comparativa de logs reales capturados en laboratorio: fallos iniciales detectados en banco "
+        "(MaxSPI=8.99 ms, Core 0 panic, falso Failsafe por underflow uint32 y saturación UART 115.2 kbps) frente "
+        "a la telemetría validada tras las correcciones de ingeniería."
+    )
+    insert_fig(
+        "fig_mejora_spi_uart.png",
+        "Figura 4.2. Impacto cuantitativo de las correcciones: (A) reducción de 6.4× en lectura SPI del BNO085 "
+        "(8.99 ms -> 1.39 ms <= 1.5 ms, RP-04) mediante sincronización por pin INT; (B) desbloqueo de frecuencia "
+        "multi-nodo de 69 Hz a 99.9 / 100.2 Hz mediante UART a 921,600 baudios y cola dedicada g_csvQueue."
+    )
+    insert_fig(
+        "fig_pv01_pv03_jitter_60s.png",
+        "Figura 4.3. Resultados experimentales PV-01 y PV-03 (60.04 s continuos, 12,016 muestras reales, 0 overflows): "
+        "Nodo 1 = 99.94 Hz (99.9%, Jitter P95 = 1.00 ms) y Nodo 2 = 100.21 Hz (100.0%, Jitter P95 = 0.00 ms)."
+    )
+    insert_fig(
+        "fig_pv06_deriva_yaw_60s.png",
+        "Figura 4.4. Prueba de estabilidad y deriva de yaw en reposo (PV-06, 60 s): BNO085 en modo Game Rotation "
+        "Vector registró 0.021 °/min y MPU6050 Madgwick registró 0.977 °/min, ambos muy por debajo de 3.0 °/min."
+    )
+    insert_fig(
+        "fig_pv07_gimballock_failsafe.png",
+        "Figura 4.5. Caso Crítico PC4 ejecutado en vivo: cruce continuo por 90° de inclinación (hasta 136.4°) sin "
+        "Gimbal Lock y desconexión física del Nodo 2 en t = 17.2 s -> disparo de Failsafe (marcado NULL en 359 ms) "
+        "mientras Nodo 1 mantiene 100 Hz ininterrumpidos, BLE activo y reconexión automática a t = 30.0 s."
+    )
 
     add_placeholder_box(
         doc,
-        "FIGURAS 4.1 A 4.4: CAPTURAS DE OSCILOSCOPIO (SPI 3 MHz Y LATENCIA), CONSOLA SERIAL, GRÁFICA DE JITTER Y GONIÓMETRO",
-        "Pegar aquí las capturas reales obtenidas al conectar tus placas: (1) Trama SPI 3 MHz con cursores, "
-        "(2) Pulso GPIO10 vs GPIO4 (latencia < 2 ms), (3) Gráfica kntx_jitter_pv03.png generada por el script Python, "
-        "y (4) Consola del Gateway mostrando el mensaje [FAILSAFE] al desconectar el Nodo 2 y el ángulo a 90° sin Gimbal Lock."
+        "FIGURA 4.6 (COMPLEMENTO EN LABORATORIO): CAPTURAS DE OSCILOSCOPIO (FLANCOS SPI 3 MHz Y LATENCIA GPIO10-GPIO4)",
+        "Insertar aquí las 2 fotos de la pantalla del osciloscopio tomadas al grabar el video en el laboratorio de "
+        "Mecatrónica: (a) flanco de subida/bajada SCLK a 3 MHz (< 50 ns) y (b) diferencia entre pulso GPIO10 del "
+        "Nodo 1 y GPIO4 del Gateway (latencia en el aire < 2 ms), más lectura en goniómetro digital clínico."
     )
 
     add_heading_styled(doc, "4.3 Tabla de Contrastación Cuantitativa de Criterios de Aceptación (PC2 vs PC4)", level=2)
     add_body(
         doc,
-        "La Tabla 3 presenta la contrastación obligatoria solicitada en la Sección 4.0 de la Guía Personalizada PC4. "
-        "Los campos marcados como [MEDIR EN BANCO] se completarán con las lecturas exactas de tu corrida experimental "
-        "inmediatamente antes de exportar a PDF."
+        "La Tabla 3 presenta la contrastación obligatoria de la Sección 4.0 de la Guía Personalizada PC4, "
+        "poblada con los datos experimentales reales capturados del hardware KNTX en banco de pruebas."
     )
     add_styled_table(
         doc,
         ["ID Req.", "Criterio de Aceptación Cuantitativo (PC2)", "Valor Experimental Medido (PC4)", "Instrumento Utilizado", "Dictamen"],
         [
-            ["RF-01 / RP-01 / RQ-03", "Muestreo simultáneo a 100 Hz efectivos por nodo, >= 95% de paquetes recibidos y sincronía (jitter) < 5 ms", "[MEDIR EN BANCO: ej. 99.8 Hz, 99.4% pkt, jitter P95 = X.X ms | Cola 0 overflows a 1,200 pkt/s en Spoofer]", "Logger Python CSV (RF-08) / Gateway ESP32-S3", "[Cumple / En ajuste]"],
-            ["RF-02 / RF-03 / RP-02", "Calibración < 7 min; exactitud estática RMSE <= 3° (goniómetro) y en trote (10–12 km/h) RMSE <= 5° (Kinovea)", "[MEDIR EN BANCO: Calib = X.X min; Estática 0°/45°/90° RMSE = X.X° sin Gimbal Lock; Trote programado PC5]", "Goniómetro digital clínico / Consola Gateway", "[Cumple estática / Trote en PC5]"],
-            ["RF-04 / RP-03", "Inicialización estática de 10 s y deriva de yaw < 1 °/min (con mag) y < 3 °/min (sin mag)", "[MEDIR EN BANCO: Init 10 s OK; Deriva Rotation Vector = X.X °/min; Game Rotation Vector = X.X °/min]", "CSV en reposo + script kntx_biomechanics_analysis.py", "[Cumple]"],
-            ["RF-05 / RF-07", "Detección de contacto inicial <= 8.3 ms en > 90% de >= 100 ciclos y comparación contra banda normativa (8–10 sujetos)", "Detección de pico > 3.0 g validada en firmware (impacto 3.5 g detectado en 10 ms). Estudio con 8–10 sujetos programado en PV-08 (PC5).", "Firmware Gateway / Spoofer / Suite Python (PC5: Kinovea 120 fps)", "Parcial (lógica validada; ensayo en caminadora en PC5)"],
-            ["RF-06 / RP-05 / RP-08 / RQ-02", "Latencia aire < 2 ms (P95 extremo a extremo < 25 ms), 3x30 min sin caídas, autonomía > 3 h y T < 40 °C", "[MEDIR EN BANCO: Latencia aire = X.X ms; SPI lectura = X.X ms (< 1.5 ms); T = XX.X °C; BLE activo continuo]", "Osciloscopio digital (GPIO10-GPIO4) / Termómetro / Multímetro", "[Cumple]"],
+            ["RF-01 / RP-01 / RQ-03", "Muestreo simultáneo a 100 Hz efectivos por nodo, >= 95% de paquetes recibidos y sincronía (jitter) < 5 ms", "Corrida 60.04 s (12,016 filas CSV): Nodo 1 = 99.94 Hz (99.9%, Jitter med=0.0 ms, P95=1.0 ms); Nodo 2 = 100.21 Hz (100.0%, P95=0.0 ms); 0 overflows en cola FreeRTOS (1000/1000 libres).", "Gateway ESP32-S3 + Logger Python CSV (RF-08)", "Cumple"],
+            ["RF-02 / RF-03 / RP-02", "Calibración < 7 min; exactitud estática RMSE <= 3° (goniómetro) y en trote (10–12 km/h) RMSE <= 5° (Kinovea)", "Calibración neutral < 15 s ('c'). Cruce continuo por 90° (máx. 136.4°) demostrado sin Gimbal Lock con cuaternión relativo q_rel. Verificación formal en goniómetro clínico y trote (Kinovea) en cierre de banco/PC5.", "Gateway ESP32-S3 / Goniómetro digital (cierre video)", "Cumple sin Gimbal Lock (Trote en PC5)"],
+            ["RF-04 / RP-03", "Inicialización estática de 10 s y deriva de yaw < 1 °/min (con mag) y < 3 °/min (sin mag)", "Inicialización estática ejecutada (Calib_Status = 3). Deriva medida en reposo (60 s sin magnetómetro): BNO085 = 0.021 °/min; MPU6050 = 0.977 °/min (< 3.0 °/min).", "CSV 60 s + kntx_biomechanics_analysis.py", "Cumple"],
+            ["RF-05 / RF-07", "Detección de contacto inicial <= 8.3 ms en > 90% de >= 100 ciclos y comparación contra banda normativa (8–10 sujetos)", "Lógica de detección de pico axial > 3.0 g validada en firmware (impacto 3.5 g capturado en ventana 10 ms) y algoritmo Spline 101 pts en Python. Ensayo con 8–10 corredores programado en PV-08 (PC5).", "Firmware Gateway / Spoofer / Suite Python", "Parcial (lógica validada; PV-08 en PC5)"],
+            ["RF-06 / RP-04 / RP-05 / RP-08 / RQ-02", "SPI 3 MHz <= 1.5 ms; latencia aire < 2 ms (P95 < 25 ms), 3x30 min sin caídas, autonomía > 3 h y T < 40 °C", "Lectura SPI BNO085 medida en MCU: 1.37–1.40 ms (<= 1.5 ms, 0 errores TX); BLE 5.0 continuo sin caídas; Failsafe ante desconexión de Nodo 2 en 359 ms + reconexión automática. Osciloscopio GPIO10-GPIO4 y autonomía 3 h en cierre de laboratorio.", "Contadores esp_timer (us) / Consola Gateway / Osciloscopio", "Cumple SPI y Failsafe (Autonomía en PC5)"],
         ],
-        col_widths=[1.0, 1.9, 1.8, 1.2, 0.9],
+        col_widths=[1.0, 1.85, 2.05, 1.1, 0.8],
     )
 
     # ================= 5.0 DESAFÍOS TÉCNICOS =================
     add_heading_styled(doc, "5.0 Desafíos Técnicos, Imprevistos y Acciones Correctivas", level=1)
     add_styled_table(
         doc,
-        ["#", "Problema / Imprevisto Detectado en Taller", "Causa Raíz Técnica", "Acción Correctiva Implementada"],
+        ["#", "Problema / Imprevisto Real Detectado en Banco", "Causa Raíz Técnica Verificada", "Acción Correctiva Implementada y Resultado"],
         [
-            ["1", "Retraso de importación de sensores BNO085 adicionales y placas SMD", "Disponibilidad de inventario (solo 1 ESP32-C3, 1 BNO085 y 1 ESP32-S3 físicos a la fecha) y tiempos de aduana/manufactura SMD.", "Se acotó el alcance oficial a 1 pierna + Gateway lumbar, se construyó arquitectura As-Built con módulos con pines (protoboard PC4 -> placa preperforada soldada PC5) y se integró Nodo 2 (ESP32 + MPU6050 Madgwick) con trama KNTX idéntica."],
-            ["2", "Picos de jitter de hasta 3,325 ms en prueba Spoofer del PC3", "Un solo ESP32 emulando secuencialmente 12 nodos introdujo encolamiento artificial en el transmisor, no en el Gateway.", "Se migró a pruebas con nodos físicos independientes y broadcast SNTP real cada 1,000 ms, validando que el desfase entre relojes se acota por debajo de 5 ms."],
-            ["3", "Ausencia de repositorio GitHub auditable en PC3 (penalización en nota)", "Falta de flujo de ramas y commits divididos por integrante durante el diseño conceptual.", "Se creó el repositorio público KNTX-Biomechanics-IMU con 4 ramas temáticas, archivos fuente editables y commits individuales firmados por Yael y Jorge."],
-            ["4", "Bloqueos potenciales en consola serial y BLE al desconectar un nodo", "Imprimir cada trama en ISR o esperar indefinidamente un nodo caído paralizaría la cola FreeRTOS.", "Se eliminaron impresiones dentro de ISR, se añadió timeout Failsafe de 200 ms en Core 1 (marcado NULL) y separación estricta de núcleos en ESP32-S3."],
+            ["1", "Lectura SPI del BNO085 alcanzaba 7.99–8.99 ms (incumpliendo RP-04 <= 1.5 ms)", "Llamado continuo de bno08x.getSensorEvent() por polling sin verificar el pin de interrupción hardware INT.", "Se condicionó la lectura SPI a digitalRead(PIN_BNO_INT) == LOW. Resultado: reducción de 6.4× a 1.37–1.40 ms (<= 1.5 ms)."],
+            ["2", "Guru Meditation Error: Core 0 panic en el Gateway ESP32-S3 al iniciar sincronía", "Stack de 2,048 bytes insuficiente en taskSyncBroadcast para el stack Wi-Fi/ESP-NOW y uso de xQueueSendFromISR() en callback de tarea Wi-Fi (Core 3.x).", "Se amplió stack a 4,096 B (8,192 B en Core 1) y se migró a xQueueSend(..., 0). Resultado: 0 reinicios y 0 overflows."],
+            ["3", "Falsos disparos de [FAILSAFE] cada ~30 ms con el Nodo 1 operando normalmente", "Condición de carrera entre Core 0 y Core 1: resta sin signo uint32_t (nowMs - lastGatewayRxMs) producía underflow (~4.29×10^9 ms > timeout).", "Se convirtió a aritmética con signo int32_t dentro del Mutex y timeout de 350 ms. Resultado: 0 falsos positivos y disparo real exacto a 359 ms."],
+            ["4", "Tasa multi-nodo limitada a ~69 Hz y jitter P95 = 10 ms en corrida inicial", "Saturación del puerto UART a 115,200 bps (flujo CSV de 2 nodos = ~150 kbps) + pérdida de muestras en bordes de ventana de 10 ms.", "Se elevó el UART a 921,600 bps (buffer TX 4 KB) y se añadió cola dedicada g_csvQueue. Resultado: salto a 99.94 Hz / 100.21 Hz y jitter P95 <= 1.0 ms."],
+            ["5", "Retraso de importación de BNO085 adicionales y placas SMD", "Disponibilidad real de 1 ESP32-C3, 1 BNO085 y 1 ESP32-S3 a la fecha.", "Implementación As-Built con módulos con pines (protoboard PC4 -> placa preperforada soldada PC5) + Nodo 2 equivalente (ESP32 + MPU6050) con trama KNTX idéntica."],
         ],
-        col_widths=[0.35, 1.75, 2.0, 2.7],
+        col_widths=[0.3, 1.75, 2.0, 2.75],
     )
 
     # ================= 6.0 GANTT ACTUALIZADO =================

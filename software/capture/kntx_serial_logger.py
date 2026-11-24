@@ -28,7 +28,18 @@ CSV_HEADER = [
 
 def run_capture(port: str, baud: int, duration_s: float, out_path: str, send_calib: bool):
     print(f"[KNTX] Conectando a {port} @ {baud} bps por {duration_s:.1f} s...")
-    ser = serial.Serial(port, baud, timeout=1.0)
+    ser = serial.Serial()
+    ser.port = port
+    ser.baudrate = baud
+    ser.timeout = 1.0
+    ser.dtr = False
+    ser.rts = False
+    ser.open()
+    # Pulso limpio de EN para salir del reset sin entrar a bootloader en CH343/CP210x
+    ser.setDTR(False)
+    ser.setRTS(True)
+    time.sleep(0.1)
+    ser.setRTS(False)
     time.sleep(1.5)
     ser.reset_input_buffer()
 
@@ -100,7 +111,7 @@ def run_capture(port: str, baud: int, duration_s: float, out_path: str, send_cal
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Logger Serial CSV para Gateway KNTX (RF-08)")
     parser.add_argument("--port", required=True, help="Puerto COM del ESP32-S3 (ej. COM4)")
-    parser.add_argument("--baud", type=int, default=115200, help="Baudrate (default 115200)")
+    parser.add_argument("--baud", type=int, default=921600, help="Baudrate (default 921600)")
     parser.add_argument("--duration", type=float, default=60.0, help="Duracion en segundos (600 para PV-01)")
     parser.add_argument("--out", default="kntx_session.csv", help="Ruta del archivo CSV de salida")
     parser.add_argument("--calib", action="store_true", help="Enviar comando 'c' de tara al iniciar")
