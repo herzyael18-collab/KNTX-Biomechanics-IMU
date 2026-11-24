@@ -31,36 +31,36 @@ def make_exec_graphic(out_png: str):
     fig.patch.set_facecolor("white")
 
     # Panel izquierdo: Esquema visual de Arquitectura Híbrida Homogénea (SPI 3 MHz + ESP-NOW)
-    ax1 = fig.add_axes([0.01, 0.05, 0.56, 0.88])
-    ax1.set_xlim(0, 10)
+    ax1 = fig.add_axes([0.01, 0.05, 0.52, 0.88])
+    ax1.set_xlim(0, 10.2)
     ax1.set_ylim(0, 5.2)
     ax1.axis("off")
 
-    ax1.text(5.0, 4.95, "ARQUITECTURA SENSORIAL HÍBRIDA PROPUESTA (MISMO BUS SPI 3 MHz Y TRAMA 36 B)",
-             ha="center", va="center", fontsize=8.8, fontweight="bold", color="#102a43")
+    ax1.text(5.1, 4.95, "ARQUITECTURA SENSORIAL HÍBRIDA (SPI 3 MHz + TRAMA 36 B)",
+             ha="center", va="center", fontsize=8.4, fontweight="bold", color="#102a43")
 
     def node_box(x, y, w, h, title, sub, fc, ec):
         ax1.add_patch(patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08",
                                              facecolor=fc, edgecolor=ec, lw=1.6))
-        ax1.text(x + w/2, y + h - 0.18, title, ha="center", va="top", fontsize=8.0, fontweight="bold", color="#102a43")
-        ax1.text(x + w/2, y + 0.22, sub, ha="center", va="bottom", fontsize=7.0, color="#334155")
+        ax1.text(x + w/2, y + h - 0.16, title, ha="center", va="top", fontsize=7.6, fontweight="bold", color="#102a43")
+        ax1.text(x + w/2, y + 0.18, sub, ha="center", va="bottom", fontsize=6.8, color="#334155")
 
-    node_box(0.2, 3.35, 3.8, 1.15, "NODO 1 — TIBIA (Referencia Impacto)", "ESP32-C3 + Bosch BNO085 | SPI 3 MHz (1.39 ms)", "#dbeafe", "#1d4ed8")
-    node_box(0.2, 1.85, 3.8, 1.15, "NODO 2 — FÉMUR (6-DOF Madgwick)", "ESP32-C3 + Bosch BMI160 | SPI 3 MHz (±16 g)", "#dcfce7", "#15803d")
-    node_box(0.2, 0.35, 3.8, 1.15, "NODO 3 — PIE (6-DOF Madgwick)", "ESP32-C3 + Bosch BMI160 | SPI 3 MHz (0.9 mA)", "#dcfce7", "#15803d")
+    node_box(0.15, 3.35, 4.0, 1.15, "NODO 1 — TIBIA (Impacto)", "ESP32-C3 + Bosch BNO085 | SPI 3 MHz", "#dbeafe", "#1d4ed8")
+    node_box(0.15, 1.85, 4.0, 1.15, "NODO 2 — FÉMUR (6-DOF)", "ESP32-C3 + Bosch BMI160 | SPI 3 MHz", "#dcfce7", "#15803d")
+    node_box(0.15, 0.35, 4.0, 1.15, "NODO 3 — PIE (6-DOF)", "ESP32-C3 + Bosch BMI160 | SPI 3 MHz", "#dcfce7", "#15803d")
 
-    node_box(5.7, 1.45, 4.0, 2.35, "GATEWAY CENTRAL — ESPALDA BAJA",
-             "ESP32-S3 N16R8 + Bosch BMI160 (Lumbar)\n• Core 0: ESP-NOW 100 Hz + Sync SNTP (1s)\n• Core 1: Cuaternión q_rel (Sin Gimbal Lock)\n• Failsafe 359 ms + BLE 5.0 + CSV 921 kbps",
+    node_box(5.75, 1.25, 4.25, 2.75, "GATEWAY — ESPALDA BAJA",
+             "ESP32-S3 + Bosch BMI160 (Lumbar)\n• Core 0: ESP-NOW 100 Hz + SNTP\n• Core 1: q_rel (Sin Gimbal Lock)\n• Failsafe 359 ms + BLE + CSV",
              "#fff7ed", "#c2410c")
 
     # Flechas hacia Gateway
-    for y_start, y_end, col in [(3.92, 3.10, "#1d4ed8"), (2.42, 2.55, "#15803d"), (0.92, 2.00, "#15803d")]:
-        ax1.annotate("", xy=(5.65, y_end), xytext=(4.08, y_start),
+    for y_start, y_end, col in [(3.92, 3.25, "#1d4ed8"), (2.42, 2.62, "#15803d"), (0.92, 2.00, "#15803d")]:
+        ax1.annotate("", xy=(5.68, y_end), xytext=(4.22, y_start),
                      arrowprops=dict(arrowstyle="-|>", lw=1.8, color=col, mutation_scale=13))
-    ax1.text(4.85, 3.82, "ESP-NOW\n100 Hz\n(36 B)", ha="center", va="center", fontsize=7.2, fontweight="bold", color="#102a43")
+    ax1.text(4.95, 4.18, "ESP-NOW\n100 Hz", ha="center", va="center", fontsize=7.0, fontweight="bold", color="#102a43")
 
-    # Panel derecho: Evidencia medida en banco (Antes vs Después de optimización CPU/SPI/UART)
-    ax2 = fig.add_axes([0.62, 0.18, 0.36, 0.68])
+    # Panel derecho: Evidencia medida en banco (bien separado a la derecha)
+    ax2 = fig.add_axes([0.66, 0.16, 0.32, 0.70])
     metrics = ["SPI BNO085\n(meta ≤1.5 ms)", "Frecuencia\n(meta ≥95 Hz)", "Jitter P95\n(meta <5 ms)", "Deriva Yaw\n(meta <3 °/m)"]
     # Normalizado a % del objetivo o valores reales en etiquetas
     # Mejor mostramos barras horizontales limpias con valor real y check verde
@@ -205,6 +205,6 @@ def build_memo(out_docx: str, fig_png: str):
 
 if __name__ == "__main__":
     fig_p = os.path.join(EVID, "fig_nota_bmi160_resumen.png")
-    out_d = os.path.join(REPO, "docs", "reportes", "Nota_Tecnica_Cambio_Sensores_KNTX.docx")
+    out_d = os.path.join(REPO, "docs", "reportes", "Nota_Tecnica_Bosch_BMI160_Visual.docx")
     make_exec_graphic(fig_p)
     build_memo(out_d, fig_p)
