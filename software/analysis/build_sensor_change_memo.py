@@ -2,10 +2,13 @@
 """
 build_sensor_change_memo.py
 Genera:
-  1. Un gráfico ejecutivo limpio (fig_nota_bmi160_resumen.png) con el esquema de la
-     Arquitectura Híbrida KNTX (1 BNO085 + 3 Bosch BMI160) y la mejora real de CPU/SPI/100 Hz.
-  2. La Nota Técnica Ejecutiva de 1 página exacta, limpia, visual y sin sobrecarga de texto
-     (sin mencionar precios del BMI160 ni fechas de compra), lista para presentar al docente.
+  1. Un diagrama limpio, claro y SIN mezclar conceptos (fig_nota_bmi160_resumen.png):
+     Muestra únicamente la Arquitectura Sensorial Híbrida Propuesta para PC5
+     (1x Bosch BNO085 + 3x Bosch BMI160 por SPI 3 MHz) y un mini-esquema visual de cómo
+     funciona la fusión Madgwick 6-DOF (Gyro + Acel -> Cuaternión 36 B).
+  2. La Nota Técnica Ejecutiva de 1 página exacta (Nota_Tecnica_Bosch_BMI160_Visual.docx),
+     separando con total claridad lo YA medido hoy (BNO085 + MPU-6050 con Madgwick)
+     de lo que se consolida mañana al integrar los Bosch BMI160.
 """
 
 import os
@@ -25,69 +28,62 @@ BLUE = RGBColor(0x1F, 0x4E, 0x79)
 DARK = RGBColor(0x1E, 0x29, 0x3B)
 
 
-def make_exec_graphic(out_png: str):
-    """Genera gráfico ejecutivo compacto de 2 paneles para incrustar en la Nota Técnica de 1 página."""
-    fig = plt.figure(figsize=(11.5, 3.55), dpi=180)
+def make_clean_architecture_graphic(out_png: str):
+    """Diagrama 100% claro: izquierda = Arquitectura Híbrida PC5; derecha = Cómo funciona Madgwick 6-DOF."""
+    fig = plt.figure(figsize=(11.5, 3.45), dpi=180)
     fig.patch.set_facecolor("white")
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, 11.5)
+    ax.set_ylim(0, 3.45)
+    ax.axis("off")
 
-    # Panel izquierdo: Esquema visual de Arquitectura Híbrida Homogénea (SPI 3 MHz + ESP-NOW)
-    ax1 = fig.add_axes([0.01, 0.05, 0.52, 0.88])
-    ax1.set_xlim(0, 10.2)
-    ax1.set_ylim(0, 5.2)
-    ax1.axis("off")
+    # Marco izquierdo: Arquitectura propuesta para PC5
+    ax.add_patch(patches.FancyBboxPatch((0.12, 0.12), 7.20, 3.20, boxstyle="round,pad=0.06",
+                                        facecolor="#f8fafc", edgecolor="#cbd5e1", lw=1.2))
+    ax.text(3.72, 3.16, "ARQUITECTURA SENSORIAL HÍBRIDA PROPUESTA PARA PC5 (TODOS EN SPI 3 MHz)",
+            ha="center", va="center", fontsize=8.6, fontweight="bold", color="#102a43")
 
-    ax1.text(5.1, 4.95, "ARQUITECTURA SENSORIAL HÍBRIDA (SPI 3 MHz + TRAMA 36 B)",
-             ha="center", va="center", fontsize=8.4, fontweight="bold", color="#102a43")
+    def nbox(x, y, w, h, title, sub, fc, ec):
+        ax.add_patch(patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.06",
+                                            facecolor=fc, edgecolor=ec, lw=1.5))
+        ax.text(x + w/2, y + h - 0.12, title, ha="center", va="top", fontsize=7.6, fontweight="bold", color="#102a43")
+        ax.text(x + w/2, y + 0.12, sub, ha="center", va="bottom", fontsize=6.7, color="#334155")
 
-    def node_box(x, y, w, h, title, sub, fc, ec):
-        ax1.add_patch(patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.08",
-                                             facecolor=fc, edgecolor=ec, lw=1.6))
-        ax1.text(x + w/2, y + h - 0.16, title, ha="center", va="top", fontsize=7.6, fontweight="bold", color="#102a43")
-        ax1.text(x + w/2, y + 0.18, sub, ha="center", va="bottom", fontsize=6.8, color="#334155")
+    nbox(0.28, 2.22, 3.15, 0.72, "NODO 1 — TIBIA (Impacto >3g)", "ESP32-C3 + Bosch BNO085 | Fusión HW SH-2", "#dbeafe", "#1d4ed8")
+    nbox(0.28, 1.28, 3.15, 0.72, "NODO 2 — FÉMUR (6-DOF)", "ESP32-C3 + Bosch BMI160 | Madgwick en CPU", "#dcfce7", "#15803d")
+    nbox(0.28, 0.34, 3.15, 0.72, "NODO 3 — PIE (6-DOF)", "ESP32-C3 + Bosch BMI160 | Madgwick en CPU", "#dcfce7", "#15803d")
 
-    node_box(0.15, 3.35, 4.0, 1.15, "NODO 1 — TIBIA (Impacto)", "ESP32-C3 + Bosch BNO085 | SPI 3 MHz", "#dbeafe", "#1d4ed8")
-    node_box(0.15, 1.85, 4.0, 1.15, "NODO 2 — FÉMUR (6-DOF)", "ESP32-C3 + Bosch BMI160 | SPI 3 MHz", "#dcfce7", "#15803d")
-    node_box(0.15, 0.35, 4.0, 1.15, "NODO 3 — PIE (6-DOF)", "ESP32-C3 + Bosch BMI160 | SPI 3 MHz", "#dcfce7", "#15803d")
+    nbox(4.42, 0.52, 2.72, 2.22, "GATEWAY — ESPALDA BAJA",
+         "ESP32-S3 + Bosch BMI160\n\n• Core 0: ESP-NOW 100 Hz\n  + Sync SNTP cada 1,000 ms\n• Core 1: Cuaternión q_rel\n  (Sin Gimbal Lock) + Failsafe\n• Salida: BLE 5.0 + CSV",
+         "#fff7ed", "#c2410c")
 
-    node_box(5.75, 1.25, 4.25, 2.75, "GATEWAY — ESPALDA BAJA",
-             "ESP32-S3 + Bosch BMI160 (Lumbar)\n• Core 0: ESP-NOW 100 Hz + SNTP\n• Core 1: q_rel (Sin Gimbal Lock)\n• Failsafe 359 ms + BLE + CSV",
-             "#fff7ed", "#c2410c")
+    for ys, ye, col in [(2.58, 2.25, "#1d4ed8"), (1.64, 1.64, "#15803d"), (0.70, 1.05, "#15803d")]:
+        ax.annotate("", xy=(4.36, ye), xytext=(3.48, ys),
+                    arrowprops=dict(arrowstyle="-|>", lw=1.7, color=col, mutation_scale=12))
+    ax.text(3.92, 2.75, "ESP-NOW\n36 Bytes\n100 Hz", ha="center", va="center", fontsize=6.8, fontweight="bold", color="#102a43")
 
-    # Flechas hacia Gateway
-    for y_start, y_end, col in [(3.92, 3.25, "#1d4ed8"), (2.42, 2.62, "#15803d"), (0.92, 2.00, "#15803d")]:
-        ax1.annotate("", xy=(5.68, y_end), xytext=(4.22, y_start),
-                     arrowprops=dict(arrowstyle="-|>", lw=1.8, color=col, mutation_scale=13))
-    ax1.text(4.95, 4.18, "ESP-NOW\n100 Hz", ha="center", va="center", fontsize=7.0, fontweight="bold", color="#102a43")
+    # Marco derecho: Cómo funciona Madgwick 6-DOF en el ESP32-C3
+    ax.add_patch(patches.FancyBboxPatch((7.55, 0.12), 3.82, 3.20, boxstyle="round,pad=0.06",
+                                        facecolor="#f0fdf4", edgecolor="#15803d", lw=1.4))
+    ax.text(9.46, 3.16, "¿CÓMO FUNCIONA MADGWICK 6-DOF?",
+            ha="center", va="center", fontsize=8.4, fontweight="bold", color="#14532d")
 
-    # Panel derecho: Evidencia medida en banco (bien separado a la derecha)
-    ax2 = fig.add_axes([0.66, 0.16, 0.32, 0.70])
-    metrics = ["SPI BNO085\n(meta ≤1.5 ms)", "Frecuencia\n(meta ≥95 Hz)", "Jitter P95\n(meta <5 ms)", "Deriva Yaw\n(meta <3 °/m)"]
-    # Normalizado a % del objetivo o valores reales en etiquetas
-    # Mejor mostramos barras horizontales limpias con valor real y check verde
-    y_pos = [3, 2, 1, 0]
-    pct_margin = [93, 100, 96, 98]  # barra visual de cumplimiento
-    bars = ax2.barh(y_pos, pct_margin, height=0.55, color=["#16a34a", "#16a34a", "#16a34a", "#16a34a"],
-                    alpha=0.85, edgecolor="#102a43", lw=1.0)
-    labels_val = [
-        "1.39 ms  (antes 8.99 ms) ✓",
-        "99.9 / 100.2 Hz  (antes 69 Hz) ✓",
-        "0.0 – 1.0 ms  (antes 10 ms) ✓",
-        "0.02 / 0.98 °/min  (< 3 °/min) ✓",
-    ]
-    for y, txt in zip(y_pos, labels_val):
-        ax2.text(3, y, txt, va="center", ha="left", fontsize=7.8, fontweight="bold", color="white")
+    nbox(7.72, 2.25, 1.62, 0.65, "Giroscopio", "Vel. angular (rad/s)\nSuave, pero deriva", "#ffffff", "#64748b")
+    nbox(9.58, 2.25, 1.62, 0.65, "Acelerómetro", "Vector gravedad (g)\nSin deriva, con ruido", "#ffffff", "#64748b")
 
-    ax2.set_yticks(y_pos)
-    ax2.set_yticklabels(metrics, fontsize=7.8, fontweight="bold", color="#102a43")
-    ax2.set_xlim(0, 105)
-    ax2.set_xticks([])
-    for sp in ["top", "right", "bottom"]:
-        ax2.spines[sp].set_visible(False)
-    ax2.set_title("VALIDACIÓN REAL EN BANCO (60 s — 12,016 MUESTRAS)", fontsize=8.4, fontweight="bold", color="#102a43", pad=6)
+    nbox(7.85, 1.18, 3.22, 0.72, "Filtro Madgwick (Descenso Gradiente)", "Corrige deriva del gyro con gravedad (β=0.12)\nSolo ~0.12 ms en CPU (1.2% del ciclo 10 ms)", "#bbf7d0", "#15803d")
+    nbox(7.85, 0.28, 3.22, 0.58, "Salida: Cuaternión [w, x, y, z]", "Misma trama 36 B que BNO085 | Sin Gimbal Lock", "#102a43", "#102a43")
+    # Texto blanco para la caja oscura inferior
+    for txt in ax.texts[-2:]:
+        txt.set_color("white")
+
+    ax.annotate("", xy=(8.65, 1.94), xytext=(8.53, 2.22), arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#15803d"))
+    ax.annotate("", xy=(10.25, 1.94), xytext=(10.39, 2.22), arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#15803d"))
+    ax.annotate("", xy=(9.46, 0.90), xytext=(9.46, 1.15), arrowprops=dict(arrowstyle="-|>", lw=1.7, color="#102a43"))
 
     plt.savefig(out_png)
     plt.close()
-    print("[OK] Grafico ejecutivo generado:", out_png)
+    print("[OK] Grafico limpio generado:", out_png)
 
 
 def shade(cell, hex_c):
@@ -99,89 +95,86 @@ def add_sec(doc, title):
     p.paragraph_format.space_before = Pt(6)
     p.paragraph_format.space_after = Pt(2)
     r = p.add_run(title)
-    r.bold = True; r.font.name = "Calibri"; r.font.size = Pt(10.5); r.font.color.rgb = BLUE
+    r.bold = True; r.font.name = "Calibri"; r.font.size = Pt(10.3); r.font.color.rgb = BLUE
 
 
 def add_bullet(doc, bold_pre, text):
     p = doc.add_paragraph(style="List Bullet")
     p.paragraph_format.space_before = Pt(0)
-    p.paragraph_format.space_after = Pt(2.2)
+    p.paragraph_format.space_after = Pt(2.0)
     p.paragraph_format.line_spacing = 1.06
     rb = p.add_run(bold_pre)
-    rb.bold = True; rb.font.name = "Calibri"; rb.font.size = Pt(9.0); rb.font.color.rgb = NAVY
+    rb.bold = True; rb.font.name = "Calibri"; rb.font.size = Pt(8.9); rb.font.color.rgb = NAVY
     r = p.add_run(text)
-    r.font.name = "Calibri"; r.font.size = Pt(9.0); r.font.color.rgb = DARK
+    r.font.name = "Calibri"; r.font.size = Pt(8.9); r.font.color.rgb = DARK
 
 
 def build_memo(out_docx: str, fig_png: str):
     doc = Document()
     for s in doc.sections:
-        s.top_margin = Inches(0.42)
-        s.bottom_margin = Inches(0.42)
-        s.left_margin = Inches(0.58)
-        s.right_margin = Inches(0.58)
+        s.top_margin = Inches(0.40)
+        s.bottom_margin = Inches(0.40)
+        s.left_margin = Inches(0.55)
+        s.right_margin = Inches(0.55)
 
-    # Banner superior
+    # Banner
     hdr = doc.add_table(rows=1, cols=1)
     hdr.alignment = WD_TABLE_ALIGNMENT.CENTER
     c = hdr.cell(0, 0)
     shade(c, "102A43")
     p = c.paragraphs[0]
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(4)
-    p.paragraph_format.space_after = Pt(4)
+    p.paragraph_format.space_before = Pt(3.5); p.paragraph_format.space_after = Pt(3.5)
     r1 = p.add_run("UNIVERSIDAD MODELO • INGENIERÍA MECATRÓNICA • PROYECTOS VII (AD26)\n")
-    r1.bold = True; r1.font.name = "Calibri"; r1.font.size = Pt(9.2); r1.font.color.rgb = RGBColor(0xCB, 0xD5, 0xE1)
-    r2 = p.add_run("RESUMEN EJECUTIVO: ARQUITECTURA SENSORIAL HÍBRIDA CON BOSCH BMI160 (PC4 → PC5)")
-    r2.bold = True; r2.font.name = "Calibri"; r2.font.size = Pt(11.2); r2.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    r1.bold = True; r1.font.name = "Calibri"; r1.font.size = Pt(9.0); r1.font.color.rgb = RGBColor(0xCB, 0xD5, 0xE1)
+    r2 = p.add_run("RESUMEN EJECUTIVO: ARQUITECTURA HÍBRIDA CON BOSCH BMI160 Y VALIDACIÓN EN BANCO (PC4 → PC5)")
+    r2.bold = True; r2.font.name = "Calibri"; r2.font.size = Pt(10.8); r2.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
 
     pm = doc.add_paragraph()
-    pm.paragraph_format.space_before = Pt(4)
-    pm.paragraph_format.space_after = Pt(3)
+    pm.paragraph_format.space_before = Pt(3.5); pm.paragraph_format.space_after = Pt(2.5)
     for k, v in [
         ("Proyecto 10 — KNTX  |  ", "Yael A. Yah Hernández & Jorge C. Contreras Rodríguez  |  "),
         ("Docente: ", "Dr. Rodrigo Daniel Solís Ortega  |  24 Nov 2026"),
     ]:
-        rk = pm.add_run(k); rk.bold = True; rk.font.name = "Calibri"; rk.font.size = Pt(8.8); rk.font.color.rgb = NAVY
-        rv = pm.add_run(v); rv.font.name = "Calibri"; rv.font.size = Pt(8.8); rv.font.color.rgb = DARK
+        rk = pm.add_run(k); rk.bold = True; rk.font.name = "Calibri"; rk.font.size = Pt(8.6); rk.font.color.rgb = NAVY
+        rv = pm.add_run(v); rv.font.name = "Calibri"; rv.font.size = Pt(8.6); rv.font.color.rgb = DARK
 
-    # 1. Decisión visual + gráfico inmediato
+    # Diagrama limpio (Arquitectura propuesta + Cómo funciona Madgwick)
     p_img = doc.add_paragraph()
     p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_img.paragraph_format.space_before = Pt(2)
-    p_img.paragraph_format.space_after = Pt(3)
-    p_img.add_run().add_picture(fig_png, width=Inches(7.2))
+    p_img.paragraph_format.space_before = Pt(1); p_img.paragraph_format.space_after = Pt(2)
+    p_img.add_run().add_picture(fig_png, width=Inches(7.3))
 
-    # 2. Puntos clave cortos y contundentes
-    add_sec(doc, "1. Por qué seleccionamos Bosch BMI160 para los 3 nodos restantes (entrega confirmada: mañana)")
-    add_bullet(doc, "Desabasto y sobrecosto del BNO085: ", "Las 3 piezas faltantes de BNO085 presentan tiempos de importación incompatibles con el cierre del 1 de diciembre y un sobreprecio elevado (~$1,000 MXN/pza). Conservamos nuestro BNO085 físico en la Tibia (impacto > 3.0 g) y seleccionamos Bosch BMI160 (disponibilidad inmediata con entrega mañana) para Fémur, Pie y Lumbar.")
-    add_bullet(doc, "Cumplimiento íntegro de SPI 3 MHz (RP-04 / RQ-01): ", "A diferencia del MPU-6050 (solo I2C) o el MPU-9250 (descontinuado), el BMI160 de Bosch Sensortec es un IMU moderno de grado wearable con bus SPI nativo hasta 10 MHz, acelerómetro ±16 g y consumo ultrabajo (0.9 mA, ideal para autonomía > 3 h).")
-    add_bullet(doc, "Descarte justificado del magnetómetro (6-DOF): ", "Conforme al PC2 (Ceriola et al., 2026) y PC3 (Decisión 2), el motor y chasis metálico de la caminadora generan errores de yaw > 30° en magnetómetros; por ello incluso el BNO085 opera en modo 6-DOF sin magnetómetro (Game Rotation Vector, meta < 3 °/min). Usar BMI160 de 6-DOF elimina la distorsión magnética sin perder exactitud.")
+    # Sección 1: Cambio de sensores
+    add_sec(doc, "1. Propuesta de Sustitución Parcial: Bosch BMI160 (Entrega confirmada: mañana)")
+    add_bullet(doc, "Motivo (cadena de suministro y costo): ", "Los 3 BNO085 faltantes presentan tiempos de importación incompatibles con el cierre del 1 de diciembre y un sobreprecio elevado (~$1,000 MXN/pza). Conservamos nuestro BNO085 físico en la Tibia (impacto > 3.0 g) e integramos Bosch BMI160 en Fémur, Pie y Lumbar.")
+    add_bullet(doc, "Por qué Bosch BMI160 (y no MPU-6050 / MPU-9250): ", "Pertenece a la misma familia Bosch Sensortec de grado wearable, ofrece bus SPI nativo hasta 10 MHz (mantiene RP-04/RQ-01 a 3 MHz en todos los nodos), rango ±16 g y consumo ultrabajo (0.9 mA, favoreciendo autonomía > 3 h).")
+    add_bullet(doc, "Por qué descartamos el magnetómetro (6-DOF): ", "Conforme al PC2 (Ceriola et al., 2026) y PC3 (Decisión 2), el motor y chasis metálico de la caminadora inducen errores de yaw > 30° en magnetómetros; incluso el BNO085 debe operarse en modo 6-DOF sin magnetómetro (Game Rotation Vector, meta < 3 °/min).")
 
-    add_sec(doc, "2. Logro Técnico en Banco: Fusión Madgwick en CPU a 100 Hz (Resolución de Limitación PC3)")
-    add_bullet(doc, "Qué se corrigió: ", "En PC3 el filtro por software colapsaba el CPU por bloqueos de código (delay(), Serial por paquete a 115.2 kbps y polling SPI sin INT). Al migrar a esp_timer_get_time() (1 µs), Madgwick compacto (~120 µs = 1.2% del ciclo de 10 ms), lectura SPI por pin INT y Gateway Dual-Core a 921,600 bps con cola g_csvQueue, el ESP32-C3 opera sin saturación.")
-    add_bullet(doc, "Resultados medidos (60 s / 12,016 muestras): ", "SPI BNO085 = 1.39 ms (≤1.5 ms), Nodo 1 = 99.94 Hz (jitter P95 = 1.0 ms, deriva = 0.021 °/min), Nodo 2 con Madgwick = 100.21 Hz (jitter P95 = 0.0 ms, deriva = 0.977 °/min), 0 overflows, cruce continuo por 90° hasta 136.4° sin Gimbal Lock y Failsafe real a 359 ms + reconexión automática.")
+    # Sección 2: Logro real en banco HOY (con separación transparente!)
+    add_sec(doc, "2. Evidencia Ya Validada HOY en Banco (Pruebas Reales con BNO085 + MPU-6050 corriendo Madgwick)")
+    add_bullet(doc, "Superación del límite de CPU de PC3: ", "En PC3 el filtro por software colapsó por código bloqueante (delay(), Serial a 115.2 kbps y polling SPI sin INT). Al reescribir el firmware con esp_timer (1 µs), Madgwick compacto (~0.12 ms/ciclo = 1.2% del CPU), SPI por pin INT y Gateway Dual-Core a 921,600 bps, la fusión en CPU opera estable a 100 Hz.")
+    add_bullet(doc, "Por qué esto respalda al BMI160: ", "Si el algoritmo Madgwick ya superó las metas del PC2 usando un MPU-6050 básico por I2C (Tabla 1), al migrar mañana al Bosch BMI160 por SPI 3 MHz conservamos exactamente el mismo protocolo de 36 bytes y ganamos menor ruido, SPI nativo y mayor rango dinámico (±16 g).")
 
-    # 3. Tabla ultra-limpia de resumen de cumplimiento
-    add_sec(doc, "3. Matriz Rápida de Cumplimiento PC2 con Arquitectura Híbrida (BNO085 + 3× Bosch BMI160)")
+    # Tabla comparativa honesta: Medido HOY vs. Mejora al poner BMI160 mañana
     tbl = doc.add_table(rows=5, cols=4)
     tbl.style = "Table Grid"
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
-    headers = ["Requisito PC2", "Criterio Oficial", "Estado con BNO085 + BMI160", "Evidencia / Plan"]
+    headers = ["Criterio PC2", "Ya Medido HOY en Banco (60 s reales)", "Evaluado con", "Mejora al integrar Bosch BMI160 (PC5)"]
     rows = [
-        ["RP-04 / RQ-01", "SPI 3 MHz, pistas <10 cm, ≤1.5 ms", "CUMPLE 100% (todos los nodos por SPI)", "1.39 ms medidos en BNO085; BMI160 soporta hasta 10 MHz"],
-        ["RF-01 / RP-01", "100 Hz efectivos, ≥95%, jitter <5 ms", "CUMPLE 100% (trama homogénea 36 B)", "99.94 / 100.21 Hz y P95 ≤ 1.0 ms en banco (0 overflows)"],
-        ["RF-02 / RP-03", "Sin Gimbal Lock; deriva <3 °/min (6-DOF)", "CUMPLE 100% (sin magnetómetro)", "Cruce 90° -> 136.4°; deriva 0.021 y 0.977 °/min"],
-        ["RF-05 / RP-08", "Impacto >3 g; autonomía >3 h; <40 cm³", "CUMPLE 100% (Tibia BNO085 + 0.9 mA)", "Ensamble final en placa preperforada + carcasa PETG (32.9 cm³)"],
+        ["RP-04 (SPI 3 MHz ≤1.5 ms)", "1.39 ms (bajó de 8.99 ms con pin INT)", "ESP32-C3 + BNO085", "Todos los nodos pasan a SPI 3 MHz (eliminando I2C del MPU-6050)"],
+        ["RF-01 / RP-01 (100 Hz, <5 ms)", "99.94 Hz (P95 1.0 ms) y 100.21 Hz (P95 0.0 ms)", "BNO085 + MPU-6050", "Misma trama ESP-NOW 36 B a 100 Hz y 0 Overflows en FreeRTOS"],
+        ["RF-02 / RP-03 (Sin Gimbal Lock)", "Cruce 90° -> 136.4°; deriva 0.02 y 0.98 °/min", "BNO085 + MPU-6050", "Menor ruido de giroscopio Bosch -> menor deriva 6-DOF (< 3 °/min)"],
+        ["Failsafe / Consumo / Carcasa", "Desconexión detectada en 359 ms + reconexión", "Gateway ESP32-S3", "0.9 mA del BMI160 ayuda a > 3 h en placa preperforada + PETG 32.9 cm³"],
     ]
-    widths = [1.1, 1.85, 2.05, 2.25]
+    widths = [1.55, 2.05, 1.25, 2.45]
     for j, h in enumerate(headers):
         cell = tbl.rows[0].cells[j]
         shade(cell, "102A43")
         cell.width = Inches(widths[j])
         p = cell.paragraphs[0]
         p.paragraph_format.space_before = Pt(1.5); p.paragraph_format.space_after = Pt(1.5)
-        r = p.add_run(h); r.bold = True; r.font.size = Pt(8.4); r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+        r = p.add_run(h); r.bold = True; r.font.size = Pt(8.2); r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
     for i, rdata in enumerate(rows):
         bg = "F8FAFC" if i % 2 else "FFFFFF"
         for j, val in enumerate(rdata):
@@ -190,21 +183,21 @@ def build_memo(out_docx: str, fig_png: str):
             cell.width = Inches(widths[j])
             p = cell.paragraphs[0]
             p.paragraph_format.space_before = Pt(1.5); p.paragraph_format.space_after = Pt(1.5)
-            r = p.add_run(val); r.font.size = Pt(8.1)
+            r = p.add_run(val); r.font.size = Pt(8.0)
             if j == 0: r.bold = True; r.font.color.rgb = NAVY
 
     pf = doc.add_paragraph()
     pf.alignment = WD_ALIGN_PARAGRAPH.CENTER
     pf.paragraph_format.space_before = Pt(5); pf.paragraph_format.space_after = Pt(0)
-    rf = pf.add_run("Repositorio Público GitHub (código, evidencias y Dashboard HMI en vivo): https://github.com/herzyael18-collab/KNTX-Biomechanics-IMU")
-    rf.italic = True; rf.font.size = Pt(8.2); rf.font.color.rgb = BLUE
+    rf = pf.add_run("Repositorio Público GitHub (código, evidencias reales y Dashboard HMI): https://github.com/herzyael18-collab/KNTX-Biomechanics-IMU")
+    rf.italic = True; rf.font.size = Pt(8.1); rf.font.color.rgb = BLUE
 
     doc.save(out_docx)
-    print("[OK] Nota ejecutiva visual generada:", out_docx)
+    print("[OK] Nota clara y sin ambiguedad generada:", out_docx)
 
 
 if __name__ == "__main__":
     fig_p = os.path.join(EVID, "fig_nota_bmi160_resumen.png")
-    out_d = os.path.join(REPO, "docs", "reportes", "Nota_Tecnica_Bosch_BMI160_Visual.docx")
-    make_exec_graphic(fig_p)
+    out_d = os.path.join(REPO, "docs", "reportes", "Nota_Tecnica_Bosch_BMI160_Final.docx")
+    make_clean_architecture_graphic(fig_p)
     build_memo(out_d, fig_p)
