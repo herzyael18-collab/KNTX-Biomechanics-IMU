@@ -1,0 +1,17 @@
+  0.01s | # [CALIB] Postura neutral (q_calib) capturada para todos los nodos activos.
+  0.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=568 | MaxJitter=7 ms | Jitter>5ms=5 | NodosMask=0x07 | Rodilla=0.21 deg | BLE=ADVERTISING
+  2.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=968 | MaxJitter=8 ms | Jitter>5ms=24 | NodosMask=0x07 | Rodilla=34.50 deg | BLE=ADVERTISING
+  4.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=1368 | MaxJitter=7 ms | Jitter>5ms=28 | NodosMask=0x07 | Rodilla=87.09 deg | BLE=ADVERTISING
+  6.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=1768 | MaxJitter=6 ms | Jitter>5ms=38 | NodosMask=0x07 | Rodilla=6.16 deg | BLE=ADVERTISING
+  8.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=2168 | MaxJitter=9 ms | Jitter>5ms=48 | NodosMask=0x07 | Rodilla=100.51 deg | BLE=ADVERTISING
+ 10.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=2568 | MaxJitter=8 ms | Jitter>5ms=53 | NodosMask=0x07 | Rodilla=28.93 deg | BLE=ADVERTISING
+ 12.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=2968 | MaxJitter=7 ms | Jitter>5ms=61 | NodosMask=0x07 | Rodilla=3.72 deg | BLE=ADVERTISING
+ 14.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=3368 | MaxJitter=8 ms | Jitter>5ms=74 | NodosMask=0x07 | Rodilla=5.96 deg | BLE=ADVERTISING
+ 16.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=3768 | MaxJitter=9 ms | Jitter>5ms=97 | NodosMask=0x07 | Rodilla=5.91 deg | BLE=ADVERTISING
+ 16.94s | # [FAILSAFE] Nodo 2 desconectado a t=19367 ms (sin datos 359 ms) -> marcado NULL (BLE/FreeRTOS continuo).
+ 18.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=4005 | MaxJitter=6 ms | Jitter>5ms=103 | NodosMask=0x03 | Rodilla=4.62 deg | BLE=ADVERTISING
+ 20.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=4205 | MaxJitter=9 ms | Jitter>5ms=206 | NodosMask=0x03 | Rodilla=4.62 deg | BLE=ADVERTISING
+ 22.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=4405 | MaxJitter=6 ms | Jitter>5ms=208 | NodosMask=0x03 | Rodilla=4.61 deg | BLE=ADVERTISING
+ 24.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=4605 | MaxJitter=7 ms | Jitter>5ms=212 | NodosMask=0x03 | Rodilla=4.61 deg | BLE=ADVERTISING
+ 26.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=4805 | MaxJitter=7 ms | Jitter>5ms=219 | NodosMask=0x03 | Rodilla=4.61 deg | BLE=ADVERTISING
+ 28.21s | # [SALUD KNTX] Cola=1000/1000 libres | Overflows=0 | TotalRX=5005 | MaxJitter=6 ms | Jitter>5ms=221 | NodosMask=0x03 | Rodilla=4.61 deg | BLE=ADVERTISING
