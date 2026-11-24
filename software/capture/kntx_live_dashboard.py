@@ -192,7 +192,7 @@ class KntxLiveDashboard:
         tk.Label(log_frame, text="Eventos del Gateway ESP32-S3 (FreeRTOS / Failsafe / Calibración):",
                  bg="#0f172a", fg="#94a3b8", font=("Segoe UI", 8, "bold")).pack(anchor="w")
         self.txt_log = tk.Text(log_frame, height=5, bg="#020617", fg="#e2e8f0",
-                               font=("Consolas", 8.5), relief="flat")
+                               font=("Consolas", 9), relief="flat")
         self.txt_log.pack(fill="x")
         self.txt_log.tag_config("fail", foreground="#f87171", font=("Consolas", 9, "bold"))
         self.txt_log.tag_config("ok", foreground="#4ade80")
