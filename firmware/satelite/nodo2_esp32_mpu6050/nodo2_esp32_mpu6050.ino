@@ -41,7 +41,8 @@
 #define MADGWICK_BETA      0.12f          // Ganancia del filtro de descenso de gradiente
 #define STATIC_CALIB_SAMPLES 250          // ~2.5 s de estimación de bias en reposo al arranque
 
-uint8_t gatewayMac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+// Dirección MAC real del Gateway ESP32-S3 (verificada en vivo: E0:72:A1:F4:EB:D8)
+uint8_t gatewayMac[6] = {0xE0, 0x72, 0xA1, 0xF4, 0xEB, 0xD8};
 
 Adafruit_MPU6050 mpu;
 

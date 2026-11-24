@@ -47,9 +47,8 @@
 #define SAMPLE_PERIOD_US  10000UL        // 100 Hz exactos (10,000 us)
 #define SPI_CLOCK_HZ      3000000UL      // 3 MHz (cumplimiento RP-04 / RQ-01)
 
-// Dirección MAC del Gateway ESP32-S3 (por defecto broadcast para plug-and-play en banco;
-// sustituir por la MAC impresa por el Gateway para tráfico unicast estricto)
-uint8_t gatewayMac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+// Dirección MAC real del Gateway ESP32-S3 (verificada en vivo: E0:72:A1:F4:EB:D8)
+uint8_t gatewayMac[6] = {0xE0, 0x72, 0xA1, 0xF4, 0xEB, 0xD8};
 
 // ============================================================================
 // VARIABLES GLOBALES DE ESTADO Y SINCRONIZACIÓN
@@ -228,41 +227,43 @@ void loop() {
     configureBnoReports(g_useMagMode);
   }
 
-  // 3. Lectura continua no bloqueante de eventos SPI y medición de duración (meta <= 1.5 ms)
-  uint64_t tReadStart = esp_timer_get_time();
-  if (bno08x.getSensorEvent(&sensorValue)) {
-    uint32_t readDurationUs = (uint32_t)(esp_timer_get_time() - tReadStart);
-    if (readDurationUs > g_maxSpiReadUs) {
-      g_maxSpiReadUs = readDurationUs;
-    }
-    g_spiReadsOk++;
+  // 3. Lectura SPI optimizada por pin INT (activo bajo): evita bloqueos de espera y garantiza lectura <= 1.5 ms (RP-04)
+  if (digitalRead(PIN_BNO_INT) == LOW) {
+    uint64_t tReadStart = esp_timer_get_time();
+    if (bno08x.getSensorEvent(&sensorValue)) {
+      uint32_t readDurationUs = (uint32_t)(esp_timer_get_time() - tReadStart);
+      if (readDurationUs > g_maxSpiReadUs) {
+        g_maxSpiReadUs = readDurationUs;
+      }
+      g_spiReadsOk++;
 
-    switch (sensorValue.sensorId) {
-      case SH2_GAME_ROTATION_VECTOR:
-        g_quat[0] = sensorValue.un.gameRotationVector.real;
-        g_quat[1] = sensorValue.un.gameRotationVector.i;
-        g_quat[2] = sensorValue.un.gameRotationVector.j;
-        g_quat[3] = sensorValue.un.gameRotationVector.k;
-        g_calib   = sensorValue.status & 0x03;
-        break;
+      switch (sensorValue.sensorId) {
+        case SH2_GAME_ROTATION_VECTOR:
+          g_quat[0] = sensorValue.un.gameRotationVector.real;
+          g_quat[1] = sensorValue.un.gameRotationVector.i;
+          g_quat[2] = sensorValue.un.gameRotationVector.j;
+          g_quat[3] = sensorValue.un.gameRotationVector.k;
+          g_calib   = sensorValue.status & 0x03;
+          break;
 
-      case SH2_ROTATION_VECTOR:
-        g_quat[0] = sensorValue.un.rotationVector.real;
-        g_quat[1] = sensorValue.un.rotationVector.i;
-        g_quat[2] = sensorValue.un.rotationVector.j;
-        g_quat[3] = sensorValue.un.rotationVector.k;
-        g_calib   = sensorValue.status & 0x03;
-        break;
+        case SH2_ROTATION_VECTOR:
+          g_quat[0] = sensorValue.un.rotationVector.real;
+          g_quat[1] = sensorValue.un.rotationVector.i;
+          g_quat[2] = sensorValue.un.rotationVector.j;
+          g_quat[3] = sensorValue.un.rotationVector.k;
+          g_calib   = sensorValue.status & 0x03;
+          break;
 
-      case SH2_ACCELEROMETER:
-        // Conversión de m/s^2 a unidades de gravedad (g) para umbral de contacto inicial > 3.0 g
-        g_accel[0] = sensorValue.un.accelerometer.x / 9.80665f;
-        g_accel[1] = sensorValue.un.accelerometer.y / 9.80665f;
-        g_accel[2] = sensorValue.un.accelerometer.z / 9.80665f;
-        break;
+        case SH2_ACCELEROMETER:
+          // Conversión de m/s^2 a unidades de gravedad (g) para umbral de contacto inicial > 3.0 g
+          g_accel[0] = sensorValue.un.accelerometer.x / 9.80665f;
+          g_accel[1] = sensorValue.un.accelerometer.y / 9.80665f;
+          g_accel[2] = sensorValue.un.accelerometer.z / 9.80665f;
+          break;
 
-      default:
-        break;
+        default:
+          break;
+      }
     }
   }
 
