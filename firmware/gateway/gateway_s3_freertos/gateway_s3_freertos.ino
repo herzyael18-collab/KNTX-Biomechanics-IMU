@@ -48,7 +48,7 @@
 #define MAX_NODES         13   // Índices 0..12 (soporta hasta los 12 nodos del caso límite)
 #define RX_QUEUE_LEN      1000 // 1,000 paquetes en RAM (~36 KB) -> 0 overflows a 1,200 pkt/s
 #define WINDOW_MS         10   // Ventana de ensamblado de matriz cinemática (100 Hz)
-#define NODE_TIMEOUT_MS   200  // Tiempo tras el cual un nodo se declara desconectado (Failsafe)
+#define NODE_TIMEOUT_MS   350  // Tiempo tras el cual un nodo se declara desconectado (Failsafe sin falsos positivos)
 #define SYNC_PERIOD_MS    1000 // Broadcast SNTP cada 1,000 ms (RP-01)
 #define IMPACT_THRESH_G   3.0f // Umbral de contacto inicial (foot strike, RF-05)
 
@@ -75,6 +75,7 @@ static node_state_t g_nodes[MAX_NODES];
 
 // Recursos FreeRTOS
 static QueueHandle_t     g_rxQueue      = NULL;
+static QueueHandle_t     g_csvQueue     = NULL;
 static SemaphoreHandle_t g_matrixMutex  = NULL;
 
 // BLE
@@ -110,8 +111,9 @@ class KntxBleCallbacks : public BLEServerCallbacks {
 };
 
 /**
- * @brief Callback de interrupción ESP-NOW (Núcleo 0).
+ * @brief Callback de recepción ESP-NOW (Núcleo 0 — tarea Wi-Fi).
  * Regla de oro FreeRTOS: ejecución mínima sin Serial.println() ni bloqueos.
+ * Nota ESP-IDF 5 / Core 3.x: se usa xQueueSend con timeout 0 (no bloqueante).
  */
 void onEspNowRecv(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
   (void)info;
@@ -124,16 +126,11 @@ void onEspNowRecv(const esp_now_recv_info_t *info, const uint8_t *incomingData, 
   kntx_packet_t pkt;
   memcpy(&pkt, incomingData, sizeof(kntx_packet_t));
 
-  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  if (xQueueSendFromISR(g_rxQueue, &pkt, &xHigherPriorityTaskWoken) != pdPASS) {
+  if (xQueueSend(g_rxQueue, &pkt, 0) != pdPASS) {
     g_queueOverflows++;
   }
 
   digitalWrite(PIN_RX_LAT_TRIG, LOW);
-
-  if (xHigherPriorityTaskWoken == pdTRUE) {
-    portYIELD_FROM_ISR();
-  }
 }
 
 // ============================================================================
@@ -243,6 +240,11 @@ void taskRxConsumer(void *pvParameters) {
 
         xSemaphoreGive(g_matrixMutex);
       }
+
+      // Encolar cada paquete recibido hacia Core 1 para exportación CSV íntegra (evita pérdida en bordes de ventana 10 ms)
+      if (g_csvQueue != NULL) {
+        xQueueSend(g_csvQueue, &pkt, 0);
+      }
     }
   }
 }
@@ -316,34 +318,38 @@ void taskMatrixAndOutput(void *pvParameters) {
     kntx_quat_t qTibiaCal = {1, 0, 0, 0}, qFemurCal = {1, 0, 0, 0};
 
     if (xSemaphoreTake(g_matrixMutex, pdMS_TO_TICKS(3)) == pdTRUE) {
+      uint32_t checkMs = millis();
       for (int i = 0; i < MAX_NODES; i++) {
-        if (g_nodes[i].online && (nowMs - g_nodes[i].lastGatewayRxMs) > NODE_TIMEOUT_MS) {
+        // Comparación con signo para evitar underflow uint32_t entre Core 0 y Core 1
+        int32_t ageMs = (int32_t)(checkMs - g_nodes[i].lastGatewayRxMs);
+        if (g_nodes[i].online && ageMs > NODE_TIMEOUT_MS) {
           // FAILSAFE: Nodo marcado como desconectado (NULL) sin bloquear la cola ni BLE
           g_nodes[i].online = false;
           g_nodes[i].presentInWindow = false;
-          Serial.printf("# [FAILSAFE] Nodo %d desconectado a t=%lu ms -> marcado NULL (BLE/FreeRTOS continuo).\n",
-                        i, (unsigned long)nowMs);
+          Serial.printf("# [FAILSAFE] Nodo %d desconectado a t=%lu ms (sin datos %ld ms) -> marcado NULL (BLE/FreeRTOS continuo).\n",
+                        i, (unsigned long)checkMs, (long)ageMs);
         }
       }
 
       for (int id = 0; id < 4; id++) {
         if (g_nodes[id].online) {
           activeMask |= (1 << id);
+          // Solo exportar fila CSV cuando realmente llegó un paquete fresco o está activo
           snapPkts[id] = g_nodes[id].data;
-          snapValid[id] = true;
+          snapValid[id] = g_nodes[id].presentInWindow || (id == NODE_ID_LUMBAR);
         }
         g_nodes[id].presentInWindow = false;
       }
 
-      // Aplicar tara de postura neutral (q_calib_conj ⊗ q_actual)
-      if (snapValid[NODE_ID_TIBIA]) {
-        kntx_quat_t qt = {snapPkts[NODE_ID_TIBIA].quat[0], snapPkts[NODE_ID_TIBIA].quat[1],
-                          snapPkts[NODE_ID_TIBIA].quat[2], snapPkts[NODE_ID_TIBIA].quat[3]};
+      // Aplicar tara de postura neutral (q_calib_conj ⊗ q_actual) usando último dato válido
+      if (g_nodes[NODE_ID_TIBIA].online) {
+        kntx_quat_t qt = {g_nodes[NODE_ID_TIBIA].data.quat[0], g_nodes[NODE_ID_TIBIA].data.quat[1],
+                          g_nodes[NODE_ID_TIBIA].data.quat[2], g_nodes[NODE_ID_TIBIA].data.quat[3]};
         qTibiaCal = kntx_quat_mul(g_nodes[NODE_ID_TIBIA].qCalibConj, qt);
       }
-      if (snapValid[NODE_ID_FEMUR]) {
-        kntx_quat_t qf = {snapPkts[NODE_ID_FEMUR].quat[0], snapPkts[NODE_ID_FEMUR].quat[1],
-                          snapPkts[NODE_ID_FEMUR].quat[2], snapPkts[NODE_ID_FEMUR].quat[3]};
+      if (g_nodes[NODE_ID_FEMUR].online) {
+        kntx_quat_t qf = {g_nodes[NODE_ID_FEMUR].data.quat[0], g_nodes[NODE_ID_FEMUR].data.quat[1],
+                          g_nodes[NODE_ID_FEMUR].data.quat[2], g_nodes[NODE_ID_FEMUR].data.quat[3]};
         qFemurCal = kntx_quat_mul(g_nodes[NODE_ID_FEMUR].qCalibConj, qf);
       }
       xSemaphoreGive(g_matrixMutex);
@@ -352,28 +358,30 @@ void taskMatrixAndOutput(void *pvParameters) {
     // Cálculo en tiempo real de cuaternión relativo y ángulo de rodilla (Fémur-Tibia)
     float kneeAngleDeg = NAN;
     kntx_quat_t qRelKnee = {1, 0, 0, 0};
-    if (snapValid[NODE_ID_TIBIA] && snapValid[NODE_ID_FEMUR]) {
+    bool tibiaOn = (activeMask & (1 << NODE_ID_TIBIA)) != 0;
+    bool femurOn = (activeMask & (1 << NODE_ID_FEMUR)) != 0;
+    if (tibiaOn && femurOn) {
       kneeAngleDeg = computeJointFlexionDeg(qFemurCal, qTibiaCal, &qRelKnee);
-    } else if (snapValid[NODE_ID_TIBIA]) {
+    } else if (tibiaOn) {
       // Modo 1 nodo de prueba en goniómetro: ángulo relativo respecto a postura neutral
       kntx_quat_t qIdent = {1, 0, 0, 0};
       kneeAngleDeg = computeJointFlexionDeg(qIdent, qTibiaCal, &qRelKnee);
     }
 
-    // Exportación CSV estándar RF-08 a 100 Hz por puerto USB Serial
-    if (g_csvMode) {
-      for (int id = 1; id <= 3; id++) {
-        if (snapValid[id]) {
-          const kntx_packet_t &p = snapPkts[id];
-          Serial.printf("%lu,%u,%.5f,%.5f,%.5f,%.5f,%.4f,%.4f,%.4f,%u,%.2f\n",
-                        (unsigned long)p.timestamp_ms,
-                        p.node_id,
-                        p.quat[0], p.quat[1], p.quat[2], p.quat[3],
-                        p.accel[0], p.accel[1], p.accel[2],
-                        p.calib_status,
-                        isnan(kneeAngleDeg) ? -1.0f : kneeAngleDeg);
-        }
+    // Exportación CSV íntegra (RF-08) vaciando g_csvQueue en Core 1 (cero pérdidas en bordes de ventana)
+    if (g_csvMode && g_csvQueue != NULL) {
+      kntx_packet_t csvPkt;
+      while (xQueueReceive(g_csvQueue, &csvPkt, 0) == pdTRUE) {
+        Serial.printf("%lu,%u,%.5f,%.5f,%.5f,%.5f,%.4f,%.4f,%.4f,%u,%.2f\n",
+                      (unsigned long)csvPkt.timestamp_ms,
+                      csvPkt.node_id,
+                      csvPkt.quat[0], csvPkt.quat[1], csvPkt.quat[2], csvPkt.quat[3],
+                      csvPkt.accel[0], csvPkt.accel[1], csvPkt.accel[2],
+                      csvPkt.calib_status,
+                      isnan(kneeAngleDeg) ? -1.0f : kneeAngleDeg);
       }
+    } else if (g_csvQueue != NULL) {
+      xQueueReset(g_csvQueue);
     }
 
     // Notificación BLE 5.0 (paquete compacto de 24 bytes a 50-100 Hz sin bloquear Core 0)
@@ -409,7 +417,9 @@ void taskMatrixAndOutput(void *pvParameters) {
 // ============================================================================
 
 void setup() {
-  Serial.begin(115200);
+  // 921600 baudios (vs 115200): evita saturación del buffer TX UART al exportar CSV de múltiples nodos a 100 Hz
+  Serial.begin(921600);
+  Serial.setTxBufferSize(4096);
   pinMode(PIN_RX_LAT_TRIG, OUTPUT);
   digitalWrite(PIN_RX_LAT_TRIG, LOW);
 
@@ -422,8 +432,9 @@ void setup() {
     g_nodes[i].qCalibConj = {1.0f, 0.0f, 0.0f, 0.0f};
   }
 
-  // Crear cola FreeRTOS y Mutex
+  // Crear colas FreeRTOS y Mutex
   g_rxQueue     = xQueueCreate(RX_QUEUE_LEN, sizeof(kntx_packet_t));
+  g_csvQueue    = xQueueCreate(256, sizeof(kntx_packet_t));
   g_matrixMutex = xSemaphoreCreateMutex();
 
   // Inicializar Wi-Fi STA + ESP-NOW en canal fijo
@@ -475,8 +486,8 @@ void setup() {
 
   // Lanzar tareas ancladas a sus núcleos dedicados (Tabla 10 del PC3)
   xTaskCreatePinnedToCore(taskRxConsumer,      "RxConsumer",   4096, NULL, 4, NULL, 0);
-  xTaskCreatePinnedToCore(taskSyncBroadcast,   "SyncBcast",    2048, NULL, 3, NULL, 0);
-  xTaskCreatePinnedToCore(taskMatrixAndOutput, "MatrixOutput", 6144, NULL, 3, NULL, 1);
+  xTaskCreatePinnedToCore(taskSyncBroadcast,   "SyncBcast",    4096, NULL, 3, NULL, 0);
+  xTaskCreatePinnedToCore(taskMatrixAndOutput, "MatrixOutput", 8192, NULL, 3, NULL, 1);
 }
 
 void loop() {
