@@ -138,30 +138,25 @@ void onEspNowRecv(const esp_now_recv_info_t *info, const uint8_t *incomingData, 
 // ============================================================================
 
 /**
- * @brief Calcula el ángulo sagital de flexión/extensión de rodilla (grados) a partir
- *        de los cuaterniones de Fémur (proximal) y Tibia (distal).
- *        Al operar en el espacio de cuaterniones (S^3) y proyectar el vector de eje
- *        de segmento tras q_rel = conj(q_prox) ⊗ q_dist, se evita por completo el
- *        bloqueo de cardán (Gimbal Lock) incluso pasando por ±90° de inclinación.
+ * @brief Calcula el ángulo articular CON SIGNO (grados, rango -180° a +180°) mediante
+ *        descomposición Twist del cuaternión relativo q_rel = conj(q_prox) ⊗ q_dist.
+ *        - Distingue flexión positiva (+90°, +167°) de flexión inversa / hiperextensión (-90°).
+ *        - Evita por completo el Gimbal Lock (singularidad a ±90°) al usar atan2(q_axis, w).
+ *        - Filtra la deriva ortogonal fuera del eje articular principal para retorno exacto a 0.0°.
  */
+static int g_flexAxis = 2; // 0=X, 1=Y, 2=Z (ajustable por comando serial 'x','y','z'; Z=giro en mesa)
+
 float computeJointFlexionDeg(const kntx_quat_t qProx, const kntx_quat_t qDist, kntx_quat_t *qRelOut) {
   kntx_quat_t qRel = kntx_quat_norm(kntx_quat_mul(kntx_quat_conj(qProx), qDist));
+  // Mantener hemisferio w >= 0 para continuidad de signo
+  if (qRel.w < 0.0f) {
+    qRel.w = -qRel.w; qRel.x = -qRel.x; qRel.y = -qRel.y; qRel.z = -qRel.z;
+  }
   if (qRelOut) *qRelOut = qRel;
 
-  // Extracción estable mediante matriz de rotación equivalente (atan2 evita singularidad a 90°)
-  float r20 = 2.0f * (qRel.x * qRel.z - qRel.w * qRel.y);
-  float r21 = 2.0f * (qRel.y * qRel.z + qRel.w * qRel.x);
-  float r22 = 1.0f - 2.0f * (qRel.x * qRel.x + qRel.y * qRel.y);
-
-  // Ángulo total de flexión relativa libre de Gimbal Lock mediante atan2(norma_vec, w)
-  // y signo del plano sagital (eje Y de Grood-Suntay).
-  float flexRad = atan2f(-r20, sqrtf(r21 * r21 + r22 * r22));
-  // También calculamos ángulo geodésico total 2*acos(|w|) cuando se prueba en goniómetro de 1 eje
-  float clampedW = fminf(1.0f, fmaxf(-1.0f, fabsf(qRel.w)));
-  float geodesicDeg = 2.0f * acosf(clampedW) * (180.0f / (float)M_PI);
-
-  (void)flexRad;
-  return geodesicDeg;
+  float qAxis = (g_flexAxis == 0) ? qRel.x : ((g_flexAxis == 1) ? qRel.y : qRel.z);
+  float signedDeg = 2.0f * atan2f(qAxis, qRel.w) * (180.0f / (float)M_PI);
+  return signedDeg;
 }
 
 /**
@@ -498,6 +493,12 @@ void loop() {
     } else if (c == 'r' || c == 'R') {
       g_csvMode = !g_csvMode;
       Serial.printf("# [MODO] Exportacion CSV por Serial: %s\n", g_csvMode ? "ACTIVA" : "PAUSADA");
+    } else if (c == 'x' || c == 'X') {
+      g_flexAxis = 0; Serial.println("# [EJE] Eje articular activo: X");
+    } else if (c == 'y' || c == 'Y') {
+      g_flexAxis = 1; Serial.println("# [EJE] Eje articular activo: Y");
+    } else if (c == 'z' || c == 'Z') {
+      g_flexAxis = 2; Serial.println("# [EJE] Eje articular activo: Z");
     } else if (c == 'g' || c == 'G') {
       Serial.printf("# [DIAG] Cola=%u/%d | Overflows=%lu | TotalRX=%lu | Impactos>3g=%lu\n",
                     (unsigned int)uxQueueSpacesAvailable(g_rxQueue),

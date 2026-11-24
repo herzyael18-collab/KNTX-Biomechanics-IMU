@@ -165,11 +165,13 @@ class KntxLiveDashboard:
                 sp.set_color("#334155")
             ax.grid(True, color="#334155", alpha=0.5)
 
-        self.ax1.set_title("Ángulo Articular Relativo de Rodilla en Tiempo Real (Sin Gimbal Lock al cruzar 90°)",
+        self.ax1.set_title("Ángulo Articular Relativo de Rodilla CON SIGNO (Twist Cuaternión — Sin Gimbal Lock)",
                            color="#f8fafc", fontsize=10, fontweight="bold")
         self.ax1.set_ylabel("Ángulo [°]", color="#e2e8f0", fontsize=9)
-        self.ax1.set_ylim(-5, 145)
-        self.ax1.axhline(90.0, color="#ef4444", linestyle="--", lw=1.4, label="90° (Zona Gimbal Lock)")
+        self.ax1.set_ylim(-110, 175)
+        self.ax1.axhline(90.0, color="#ef4444", linestyle="--", lw=1.3, label="+90° Flexión")
+        self.ax1.axhline(0.0, color="#64748b", linestyle=":", lw=1.0)
+        self.ax1.axhline(-90.0, color="#f59e0b", linestyle="--", lw=1.3, label="-90° Inversa")
         self.line_angle, = self.ax1.plot([], [], color="#38bdf8", lw=2.2, label="Rodilla q_rel (°)")
         self.ax1.legend(loc="upper right", facecolor="#0f172a", edgecolor="#334155", labelcolor="white", fontsize=8)
 
@@ -328,7 +330,7 @@ class KntxLiveDashboard:
 
                 if nid == 1:
                     self.current_accel = (ax*ax + ay*ay + az*az) ** 0.5
-                    if knee >= 0.0:
+                    if abs(knee) <= 185.0:
                         self.current_angle = knee
                         self.t_buf.append(ts_rx - self.t_start)
                         self.angle_buf.append(knee)

@@ -435,10 +435,17 @@ def build_report(out_docx: str, repo_dir: str):
         "Gimbal Lock y desconexión física del Nodo 2 en t = 17.2 s -> disparo de Failsafe (marcado NULL en 359 ms) "
         "mientras Nodo 1 mantiene 100 Hz ininterrumpidos, BLE activo y reconexión automática a t = 30.0 s."
     )
+    insert_fig(
+        "fig_prueba_flexiones_signo.png",
+        "Figura 4.6. Validación cíclica de flexiones en vivo desde el Dashboard HMI (61.7 s, 12,344 muestras: "
+        "6,171 Nodo 1 + 6,173 Nodo 2 = 100%). Comparativa del ángulo geodésico sin signo 2·acos(|w|) frente a la "
+        "corrección por descomposición Twist con signo 2·atan2(q_eje, w): demuestra repetición a +90°, cruce suave "
+        "hasta +166.95° sin Gimbal Lock, discriminación de flexión inversa (-88.23° y -16.5°) y retorno exacto a 0.0°."
+    )
 
     add_placeholder_box(
         doc,
-        "FIGURA 4.6 (COMPLEMENTO EN LABORATORIO): CAPTURAS DE OSCILOSCOPIO (FLANCOS SPI 3 MHz Y LATENCIA GPIO10-GPIO4)",
+        "FIGURA 4.7 (COMPLEMENTO EN LABORATORIO): CAPTURAS DE OSCILOSCOPIO (FLANCOS SPI 3 MHz Y LATENCIA GPIO10-GPIO4)",
         "Insertar aquí las 2 fotos de la pantalla del osciloscopio tomadas al grabar el video en el laboratorio de "
         "Mecatrónica: (a) flanco de subida/bajada SCLK a 3 MHz (< 50 ns) y (b) diferencia entre pulso GPIO10 del "
         "Nodo 1 y GPIO4 del Gateway (latencia en el aire < 2 ms), más lectura en goniómetro digital clínico."
