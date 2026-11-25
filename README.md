@@ -13,7 +13,7 @@
 ---
 
 ## Video Explicativo de la Primera Prueba Funcional (PC4 — 3 a 5 min)
-> **Enlace al Video PC4:** *(Pendiente de grabar tras ejecutar la batería rápida de laboratorio con el hardware conectado — insertar enlace permanente de OneDrive Universidad Modelo / YouTube oculto aquí y en la portada del reporte PC4).*
+> **Enlace al Video PC4:** [Video Evidencia PC4 (YouTube)](https://youtu.be/6kpxBTlRQXI) (`https://youtu.be/6kpxBTlRQXI`)
 
 ---
 

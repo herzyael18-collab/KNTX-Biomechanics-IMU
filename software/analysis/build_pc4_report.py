@@ -31,6 +31,7 @@ DARK = RGBColor(0x1E, 0x29, 0x3B)
 GRAY = RGBColor(0x47, 0x55, 0x69)
 
 GITHUB_URL = "https://github.com/herzyael18-collab/KNTX-Biomechanics-IMU"
+VIDEO_URL = "https://youtu.be/6kpxBTlRQXI"
 
 
 def set_cell_bg(cell, hex_color: str):
@@ -272,14 +273,13 @@ def build_final_pc4(out_docx: str, repo_dir: str):
     add_hyperlink(p_gh_cov, GITHUB_URL, GITHUB_URL, font_size_pt=9.8, bold=True)
 
     c10, c11 = link_box.rows[1].cells[0], link_box.rows[1].cells[1]
-    set_cell_bg(c10, "1F4E79"); set_cell_bg(c11, "FFFBEB")
+    set_cell_bg(c10, "1F4E79"); set_cell_bg(c11, "EFF6FF")
     c10.width = Inches(2.45); c11.width = Inches(4.55)
     r_l2 = c10.paragraphs[0].add_run("Video Explicativo PC4\n(3 a 5 min — Sustituye Think Aloud)")
     r_l2.bold = True; r_l2.font.name = "Calibri"; r_l2.font.size = Pt(9.5); r_l2.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
     p_vid = c11.paragraphs[0]
     p_vid.paragraph_format.space_before = Pt(4); p_vid.paragraph_format.space_after = Pt(4)
-    rv = p_vid.add_run("[PEGAR AQUÍ ENLACE PERMANENTE DE ONEDRIVE MODELO / YOUTUBE OCULTO ANTES DE EXPORTAR A PDF]")
-    rv.bold = True; rv.font.name = "Calibri"; rv.font.size = Pt(9.2); rv.font.color.rgb = RGBColor(0xB4, 0x53, 0x09)
+    add_hyperlink(p_vid, VIDEO_URL, VIDEO_URL, font_size_pt=9.8, bold=True)
 
     doc.add_page_break()
 
