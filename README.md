@@ -24,8 +24,9 @@
 - **Gateway Central (Espalda baja L4–L5):** `ESP32-S3-WROOM-1 N16R8` ejecutando FreeRTOS en doble núcleo:
   - **Núcleo 0:** Recepción ISR ESP-NOW en cola de 1,000 paquetes (~36 KB RAM), sincronización temporal por broadcast SNTP cada 1,000 ms (jitter < 5 ms, `RP-01`) y detección de impacto tibial (> 3.0 g, `RF-05`).
   - **Núcleo 1:** Cierre determinista de ventanas de 10 ms (100 Hz), mecanismo **Failsafe** ante apagado/desconexión de nodo satélite (marca `NULL` sin bloquear BLE ni la cola), cálculo de cuaternión relativo `q_rel = conj(q_femur) ⊗ q_tibia` libre de *Gimbal Lock*, transmisión BLE 5.0 y exportación `.CSV` conforme a `RF-08`.
-- **Nodo Satélite 1 (Tibia):** `ESP32-C3` + `BNO085` sobre bus **SPI local a 3 MHz** (< 10 cm, `RP-04` / `RQ-01`), fusión en hardware SH-2 (`Game Rotation Vector` / `Rotation Vector`) a 100 Hz vía ESP-NOW.
-- **Nodo Satélite 2 (Fémur — Equivalencia As-Built PC4):** `ESP32 WROOM-32` + `MPU6050` con filtro Madgwick 6-DOF a 100 Hz entregando la misma estructura de trama KNTX (36 bytes) vía ESP-NOW para validar concurrencia real multi-nodo y ángulo de rodilla en vivo mientras arriban los `BNO085` adicionales para PC5.
+- **Nodo Satélite 1 (Tibia — Referencia de Impacto > 3.0 g):** `ESP32-C3` + `Bosch BNO085` sobre bus **SPI local a 3 MHz** (< 5 cm, `RP-04` / `RQ-01`, lectura medida por interrupción `INT`: `1.39 ms <= 1.5 ms`), fusión en hardware SH-2 (`Game Rotation Vector`, deriva `0.021 °/min`) a 100 Hz vía ESP-NOW.
+- **Nodos Satélite 2 y 3 (Fémur y Pie) + Sensor Lumbar:** Validados funcionalmente en PC4 con `MPU-6050` ejecutando fusión **Madgwick 6-DOF** en CPU (`0.12 ms` = 1.2% CPU, `100.21 Hz`, `0.00 ms` jitter P95, `0.977 °/min` deriva) y consolidados hacia PC5 con **`Bosch BMI160`** sobre bus **SPI nativo a 3 MHz** (±16 g, `0.9 mA`), transmitiendo todos la misma trama binaria `kntx_packet_t` de 36 bytes.
+- **Dashboard HMI en Tiempo Real (`INICIAR_DASHBOARD_KNTX.bat`):** Visualización en vivo a `921,600 bps` del ángulo articular con signo por descomposición Twist (`-180°` a `+180°`, libre de *Gimbal Lock*), aceleración axial de tibia, estado Online/Failsafe por nodo, tara instantánea a `0.0°` y grabación directa a `.CSV` (48,670 muestras reales respaldadas en `docs/evidencias/`).
 
 ---
 
